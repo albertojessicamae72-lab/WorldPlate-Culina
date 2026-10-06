@@ -1,5 +1,4 @@
 # Culina
-
 ## Prerequisites
 
 - Node.js and npm
