@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const SESSION_KEY = "culina:local-session";
 export function getSessionToken() {
@@ -145,18 +145,35 @@ export function useStartConversation() {
   return useMutation({ mutationFn: (username) => accountRequest("/conversations", { method: "POST", body: JSON.stringify({ username }) }), onSuccess: () => client.invalidateQueries({ queryKey: ["conversations"] }) });
 }
 export function useMessages(conversationId) {
-  return useQuery({
-    queryKey: ["messages", conversationId],
+  const latestQuery = useQuery({
+    queryKey: ["messages", conversationId, "latest"],
     queryFn: () => accountRequest(`/conversations/${encodeURIComponent(conversationId)}/messages`),
     enabled: Boolean(conversationId),
     refetchInterval: () => document.visibilityState === "visible" ? 8000 : false,
     retry: 1,
     refetchOnWindowFocus: true,
   });
+  const historyQuery = useInfiniteQuery({
+    queryKey: ["messages", conversationId, "history"],
+    queryFn: ({ pageParam }) => accountRequest(
+      `/conversations/${encodeURIComponent(conversationId)}/messages?before=${encodeURIComponent(pageParam)}`,
+    ),
+    initialPageParam: latestQuery.data?.items[0]?.id,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.items[0]?.id : undefined,
+    enabled: false,
+  });
+  return {
+    ...latestQuery,
+    historyPages: historyQuery.data?.pages || [],
+    hasOlderMessages: historyQuery.data ? historyQuery.hasNextPage : latestQuery.data?.hasMore,
+    isLoadingOlderMessages: historyQuery.isFetchingNextPage,
+    historyError: historyQuery.error,
+    loadOlderMessages: () => historyQuery.fetchNextPage(),
+  };
 }
 export function useSendMessage(conversationId) {
   const client = useQueryClient();
-  return useMutation({ mutationFn: (body) => accountRequest(`/conversations/${encodeURIComponent(conversationId)}/messages`, { method: "POST", body: JSON.stringify({ body }) }), onSuccess: () => { client.invalidateQueries({ queryKey: ["messages", conversationId] }); client.invalidateQueries({ queryKey: ["conversations"] }); } });
+  return useMutation({ mutationFn: (body) => accountRequest(`/conversations/${encodeURIComponent(conversationId)}/messages`, { method: "POST", body: JSON.stringify({ body }) }), onSuccess: () => { client.invalidateQueries({ queryKey: ["messages", conversationId, "latest"] }); client.invalidateQueries({ queryKey: ["conversations"] }); } });
 }
 export function useDeleteConversation() {
   const client = useQueryClient();

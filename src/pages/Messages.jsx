@@ -9,18 +9,45 @@ export default function Messages() {
   const { user } = useAuth();
   const [body, setBody] = useState("");
   const bottom = useRef(null);
+  const messageList = useRef(null);
+  const previousScrollHeight = useRef(null);
+  const olderRequestInFlight = useRef(false);
   const conversationsQuery = useConversations();
   const conversations = Array.isArray(conversationsQuery.data) ? conversationsQuery.data : [];
   const messagesQuery = useMessages(conversationId);
-  const messages = Array.isArray(messagesQuery.data) ? messagesQuery.data : [];
+  const messages = [
+    ...[...messagesQuery.historyPages].reverse().flatMap((page) => page.items),
+    ...(messagesQuery.data?.items || []),
+  ];
   const send = useSendMessage(conversationId);
   const remove = useDeleteConversation();
   const conversation = conversations.find((item) => item?.id === conversationId);
   const peer = conversation?.user || {};
+  const latestMessageId = messages[messages.length - 1]?.id;
 
   useEffect(() => {
     if (messages.length) bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length]);
+  }, [conversationId, latestMessageId]);
+
+  useEffect(() => {
+    previousScrollHeight.current = null;
+    olderRequestInFlight.current = false;
+  }, [conversationId]);
+
+  useEffect(() => {
+    if (previousScrollHeight.current === null || messagesQuery.isLoadingOlderMessages) return;
+    if (messageList.current) {
+      messageList.current.scrollTop += messageList.current.scrollHeight - previousScrollHeight.current;
+    }
+    previousScrollHeight.current = null;
+  }, [messages.length, messagesQuery.isLoadingOlderMessages]);
+
+  const loadOlderMessages = () => {
+    if (!messagesQuery.hasOlderMessages || messagesQuery.isLoadingOlderMessages || olderRequestInFlight.current) return;
+    olderRequestInFlight.current = true;
+    previousScrollHeight.current = messageList.current?.scrollHeight ?? null;
+    messagesQuery.loadOlderMessages().finally(() => { olderRequestInFlight.current = false; });
+  };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -58,8 +85,8 @@ export default function Messages() {
             <Link to="/messages" aria-label="Back to conversations" className="rounded-full p-2 text-stone-500 hover:bg-stone-100"><ArrowLeft className="h-4 w-4" /></Link>
             <div className="min-w-0 flex-1"><h2 className="truncate font-semibold text-stone-800">{peer.displayName || (peer.username ? `@${peer.username}` : "Recipe conversation")}</h2>{peer.username && <Link to={`/members/${encodeURIComponent(peer.username)}`} className="text-xs text-stone-500">@{peer.username} · Recipe collaboration</Link>}</div>
           </header>
-          <div className="flex-1 space-y-3 overflow-y-auto p-4">
-            {messagesQuery.isLoading ? <p className="py-8 text-center text-sm text-stone-500">Loading conversation…</p> : messagesQuery.isError ? <div className="mx-auto max-w-sm rounded-2xl bg-rose-50 p-4 text-center text-sm text-rose-800"><p>{messagesQuery.error.message}</p><button onClick={() => messagesQuery.refetch()} className="mt-3 inline-flex items-center gap-1 font-semibold"><RefreshCw className="h-3.5 w-3.5" />Reload messages</button></div> : messages.length ? messages.map((message) => <div key={message.id} className={`flex ${message.senderId === user?.id ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl px-4 py-2.5 ${message.senderId === user?.id ? "bg-amber-700 text-white" : "bg-stone-100 text-stone-800"}`}><p className="whitespace-pre-wrap break-words text-sm">{message.body}</p><p className={`mt-1 text-[10px] ${message.senderId === user?.id ? "text-amber-100" : "text-stone-400"}`}>{message.senderId === user?.id ? "You" : `@${message.username || "member"}`}</p></div></div>) : <div className="flex h-full min-h-48 flex-col items-center justify-center text-center"><BookOpen className="h-7 w-7 text-amber-600" /><p className="mt-3 text-sm font-medium text-stone-700">Start your recipe collaboration</p><p className="mt-1 text-xs text-stone-500">Share a dish idea, ingredient swap, or question.</p></div>}
+          <div ref={messageList} onScroll={(event) => { if (event.currentTarget.scrollTop <= 48) loadOlderMessages(); }} className="flex-1 space-y-3 overflow-y-auto p-4">
+            {messagesQuery.isLoading ? <p className="py-8 text-center text-sm text-stone-500">Loading conversation…</p> : messagesQuery.isError ? <div className="mx-auto max-w-sm rounded-2xl bg-rose-50 p-4 text-center text-sm text-rose-800"><p>{messagesQuery.error.message}</p><button onClick={() => messagesQuery.refetch()} className="mt-3 inline-flex items-center gap-1 font-semibold"><RefreshCw className="h-3.5 w-3.5" />Reload messages</button></div> : messages.length ? <>{messagesQuery.isLoadingOlderMessages && <p className="py-2 text-center text-xs text-stone-500">Loading earlier messages…</p>}{messagesQuery.historyError && <p role="alert" className="py-2 text-center text-xs text-rose-700">Couldn’t load earlier messages. <button onClick={loadOlderMessages} className="font-semibold underline">Try again</button></p>}{messages.map((message) => <div key={message.id} className={`flex ${message.senderId === user?.id ? "justify-end" : "justify-start"}`}><div className={`max-w-[82%] rounded-2xl px-4 py-2.5 ${message.senderId === user?.id ? "bg-amber-700 text-white" : "bg-stone-100 text-stone-800"}`}><p className="whitespace-pre-wrap break-words text-sm">{message.body}</p><p className={`mt-1 text-[10px] ${message.senderId === user?.id ? "text-amber-100" : "text-stone-400"}`}>{message.senderId === user?.id ? "You" : `@${message.username || "member"}`}</p></div></div>)}</> : <div className="flex h-full min-h-48 flex-col items-center justify-center text-center"><BookOpen className="h-7 w-7 text-amber-600" /><p className="mt-3 text-sm font-medium text-stone-700">Start your recipe collaboration</p><p className="mt-1 text-xs text-stone-500">Share a dish idea, ingredient swap, or question.</p></div>}
             <div ref={bottom} />
           </div>
           <form onSubmit={submit} className="border-t border-stone-100 p-3">

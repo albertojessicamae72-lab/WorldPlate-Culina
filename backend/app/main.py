@@ -21,12 +21,6 @@ async def _avatar_cleanup_loop():
             logger.exception("Scheduled profile photo cleanup failed")
 
 
-async def _ephemeral_message_cleanup_loop():
-    while True:
-        await asyncio.sleep(60)
-        account_store.cleanup_ephemeral_messages()
-
-
 @asynccontextmanager
 async def lifespan(_app):
     try:
@@ -34,18 +28,12 @@ async def lifespan(_app):
     except Exception:
         logger.exception("Initial profile photo cleanup failed")
     cleanup_task = asyncio.create_task(_avatar_cleanup_loop())
-    message_cleanup_task = asyncio.create_task(_ephemeral_message_cleanup_loop())
     try:
         yield
     finally:
         cleanup_task.cancel()
-        message_cleanup_task.cancel()
         try:
             await cleanup_task
-        except asyncio.CancelledError:
-            pass
-        try:
-            await message_cleanup_task
         except asyncio.CancelledError:
             pass
 

@@ -1,7 +1,7 @@
 from typing import Literal
 from datetime import date
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
 
 from .. import account_store
@@ -201,9 +201,15 @@ def create_conversation(payload: ConversationCreate, account=Depends(current_acc
 
 
 @router.get("/conversations/{conversation_id}/messages")
-def get_messages(conversation_id: str, account=Depends(current_account)):
-    result = account_store.list_messages(account["id"], conversation_id)
+def get_messages(
+    conversation_id: str,
+    before: str | None = Query(default=None, min_length=1, max_length=36),
+    limit: int = Query(default=100, ge=1, le=100),
+    account=Depends(current_account),
+):
+    result = account_store.list_messages(account["id"], conversation_id, before, limit)
     if result is None: raise HTTPException(status_code=404, detail="Conversation not found")
+    if result is False: raise HTTPException(status_code=404, detail="Message cursor not found")
     return result
 
 

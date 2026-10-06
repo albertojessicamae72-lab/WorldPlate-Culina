@@ -12,23 +12,6 @@ from pathlib import Path
 
 DATABASE_PATH = Path(__file__).resolve().parent.parent / "data" / "culina.sqlite3"
 PASSWORD_ITERATIONS = 310_000
-_LIVE_MESSAGES: dict[str, list[dict]] = {}
-_LIVE_MESSAGE_ACTIVITY: dict[str, datetime] = {}
-_MAX_LIVE_MESSAGES_PER_CONVERSATION = 100
-_MAX_LIVE_CONVERSATIONS = 200
-_LIVE_MESSAGE_TTL = timedelta(hours=2)
-
-
-def _prune_live_messages(now: datetime | None = None):
-    cutoff = (now or datetime.now(timezone.utc)) - _LIVE_MESSAGE_TTL
-    expired = [conversation_id for conversation_id, activity in _LIVE_MESSAGE_ACTIVITY.items() if activity < cutoff]
-    for conversation_id in expired:
-        _LIVE_MESSAGES.pop(conversation_id, None)
-        _LIVE_MESSAGE_ACTIVITY.pop(conversation_id, None)
-
-
-def cleanup_ephemeral_messages():
-    _prune_live_messages()
 
 
 @contextmanager
@@ -115,6 +98,15 @@ def initialize():
             conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
             PRIMARY KEY(account_id, conversation_id)
         );
+        CREATE TABLE IF NOT EXISTS messages (
+            id TEXT PRIMARY KEY,
+            conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+            sender_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+            body TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS messages_conversation_created
+            ON messages(conversation_id, created_at DESC, id DESC);
         CREATE TABLE IF NOT EXISTS avatar_retirements (
             url TEXT PRIMARY KEY, delete_after TEXT NOT NULL
         );
@@ -125,9 +117,6 @@ def initialize():
             locked_until TEXT NOT NULL DEFAULT ''
         );
         """)
-        # Chat messages are intentionally ephemeral. Remove messages from the
-        # previous persistent implementation, and never create a messages table.
-        connection.execute("DROP TABLE IF EXISTS messages")
         columns = {row["name"] for row in connection.execute("PRAGMA table_info(accounts)")}
         if "password_salt" not in columns:
             connection.execute("ALTER TABLE accounts ADD COLUMN password_salt TEXT NOT NULL DEFAULT ''")
@@ -650,10 +639,12 @@ def _conversation_access(connection, conversation_id, account_id):
 def _conversation_item(connection, row, account_id):
     peer_id = row["account_b"] if row["account_a"] == account_id else row["account_a"]
     peer = connection.execute("SELECT id,username,display_name,avatar_url FROM accounts WHERE id=?", (peer_id,)).fetchone()
-    live = _LIVE_MESSAGES.get(row["id"], [])
-    last = live[-1] if live else None
+    last = connection.execute(
+        "SELECT body,created_at FROM messages WHERE conversation_id=? ORDER BY created_at DESC,id DESC LIMIT 1",
+        (row["id"],),
+    ).fetchone()
     return {"id": row["id"], "user": {"id": peer["id"], "username": peer["username"], "displayName": peer["display_name"], "avatarUrl": peer["avatar_url"]},
-            "lastMessage": last["body"] if last else "", "updatedAt": last["createdAt"] if last else row["created_at"]}
+            "lastMessage": last["body"] if last else "", "updatedAt": last["created_at"] if last else row["created_at"]}
 
 
 def start_conversation(account_id: str, peer_username: str):
@@ -673,7 +664,6 @@ def start_conversation(account_id: str, peer_username: str):
 
 
 def list_conversations(account_id: str):
-    _prune_live_messages()
     with _connect() as connection:
         rows = connection.execute("""SELECT c.* FROM conversations c LEFT JOIN hidden_conversations h ON h.conversation_id=c.id AND h.account_id=?
             WHERE (c.account_a=? OR c.account_b=?) AND h.conversation_id IS NULL ORDER BY c.created_at DESC""", (account_id,account_id,account_id)).fetchall()
@@ -681,15 +671,37 @@ def list_conversations(account_id: str):
         return sorted(result, key=lambda item: item["updatedAt"], reverse=True)
 
 
-def list_messages(account_id: str, conversation_id: str):
-    _prune_live_messages()
+def list_messages(account_id: str, conversation_id: str, before: str | None = None, limit: int = 100):
     with _connect() as connection:
         if not _conversation_access(connection,conversation_id,account_id): return None
-        return list(_LIVE_MESSAGES.get(conversation_id, []))
+        cursor = None
+        if before:
+            cursor = connection.execute(
+                "SELECT created_at,id FROM messages WHERE conversation_id=? AND id=?",
+                (conversation_id,before),
+            ).fetchone()
+            if not cursor: return False
+        query = """SELECT m.id,m.sender_id,m.body,m.created_at,a.username,a.display_name
+            FROM messages m JOIN accounts a ON a.id=m.sender_id
+            WHERE m.conversation_id=?"""
+        params: list = [conversation_id]
+        if cursor:
+            query += " AND (m.created_at < ? OR (m.created_at = ? AND m.id < ?))"
+            params.extend((cursor["created_at"],cursor["created_at"],cursor["id"]))
+        query += " ORDER BY m.created_at DESC,m.id DESC LIMIT ?"
+        params.append(limit + 1)
+        rows = connection.execute(query,params).fetchall()
+        has_more = len(rows) > limit
+        rows = rows[:limit]
+        items = [
+            {"id": row["id"],"senderId": row["sender_id"],"username": row["username"],
+             "displayName": row["display_name"],"body": row["body"],"createdAt": row["created_at"]}
+            for row in reversed(rows)
+        ]
+        return {"items": items,"hasMore": has_more}
 
 
 def send_message(account_id: str, conversation_id: str, body: str):
-    _prune_live_messages()
     with _connect() as connection:
         conversation = _conversation_access(connection,conversation_id,account_id)
         if not conversation: return None
@@ -697,18 +709,12 @@ def send_message(account_id: str, conversation_id: str, body: str):
         friendship = connection.execute("SELECT 1 FROM friendships WHERE status='accepted' AND ((requester_id=? AND addressee_id=?) OR (requester_id=? AND addressee_id=?))", (account_id,peer,peer,account_id)).fetchone()
         if not friendship: return False
         sender = connection.execute("SELECT username,display_name FROM accounts WHERE id=?", (account_id,)).fetchone()
-        mid=str(uuid.uuid4()); now=datetime.now(timezone.utc).isoformat(timespec="seconds")
+        mid=str(uuid.uuid4()); now=datetime.now(timezone.utc).isoformat(timespec="microseconds")
         message = {"id":mid,"senderId":account_id,"username":sender["username"],"displayName":sender["display_name"],"body":body.strip(),"createdAt":now}
-        messages = _LIVE_MESSAGES.setdefault(conversation_id, [])
-        messages.append(message)
-        if len(messages) > _MAX_LIVE_MESSAGES_PER_CONVERSATION:
-            del messages[:-_MAX_LIVE_MESSAGES_PER_CONVERSATION]
-        _LIVE_MESSAGE_ACTIVITY[conversation_id] = datetime.now(timezone.utc)
-        if len(_LIVE_MESSAGES) > _MAX_LIVE_CONVERSATIONS:
-            oldest = min(_LIVE_MESSAGE_ACTIVITY, key=_LIVE_MESSAGE_ACTIVITY.get)
-            if oldest != conversation_id:
-                _LIVE_MESSAGES.pop(oldest, None)
-                _LIVE_MESSAGE_ACTIVITY.pop(oldest, None)
+        connection.execute(
+            "INSERT INTO messages (id,conversation_id,sender_id,body,created_at) VALUES (?,?,?,?,?)",
+            (mid,conversation_id,account_id,message["body"],now),
+        )
         connection.execute("DELETE FROM hidden_conversations WHERE conversation_id=?", (conversation_id,))
         return message
 
@@ -719,8 +725,7 @@ def hide_conversation(account_id: str, conversation_id: str):
         connection.execute("INSERT OR IGNORE INTO hidden_conversations VALUES (?, ?)", (account_id,conversation_id))
         hidden_count = connection.execute("SELECT COUNT(*) AS total FROM hidden_conversations WHERE conversation_id=?", (conversation_id,)).fetchone()["total"]
         if hidden_count >= 2:
-            _LIVE_MESSAGES.pop(conversation_id, None)
-            _LIVE_MESSAGE_ACTIVITY.pop(conversation_id, None)
+            connection.execute("DELETE FROM conversations WHERE id=?", (conversation_id,))
         return True
 
 
