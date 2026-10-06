@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..models import Adaptation, NewAdaptation
 from ..seed import RECIPES, get_recipe
+from .. import account_store
+from .accounts import current_account
+from .local_twists import discard_local_twists
 
 router = APIRouter(prefix="/api", tags=["adaptations"])
 
@@ -38,7 +41,7 @@ def read_adaptation(recipe_id: str, country_code: str):
     "/recipes/{recipe_id}/adaptations/{country_code}",
     status_code=204,
 )
-def delete_adaptation(recipe_id: str, country_code: str):
+def delete_adaptation(recipe_id: str, country_code: str, owner: str = Query(...)):
     recipe = get_recipe(recipe_id)
     if recipe is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -51,6 +54,12 @@ def delete_adaptation(recipe_id: str, country_code: str):
             status_code=404,
             detail=f"No adaptation of '{recipe_id}' for country '{country_code}'",
         )
+    if adaptation.owner != owner:
+        raise HTTPException(
+            status_code=403,
+            detail="Only the person who added this adaptation can delete it.",
+        )
+    discard_local_twists(recipe_id, country_code)
     recipe.adaptations.remove(adaptation)
 
 
@@ -59,7 +68,7 @@ def delete_adaptation(recipe_id: str, country_code: str):
     response_model=Adaptation,
     status_code=201,
 )
-def create_adaptation(recipe_id: str, payload: NewAdaptation):
+def create_adaptation(recipe_id: str, payload: NewAdaptation, account=Depends(current_account)):
     recipe = get_recipe(recipe_id)
     if recipe is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -69,7 +78,12 @@ def create_adaptation(recipe_id: str, payload: NewAdaptation):
             status_code=409,
             detail=f"An adaptation for country '{country}' already exists",
         )
-    data = payload.model_dump()
+    data = payload.model_dump(exclude={"owner"})
+    data["owner"] = account["id"]
+    try:
+        data["collaborators"] = account_store.get_public_accounts_by_ids(data["collaborators"])
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     data["destinationCountry"] = country
     adaptation = Adaptation(
         id=f"{recipe.id}-{country.lower()}",

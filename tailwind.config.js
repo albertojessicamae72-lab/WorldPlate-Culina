@@ -13,6 +13,12 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			brand: {
+  				orange: '#C2410C',
+  				peach: '#FED7AA',
+  				'light-orange': '#FFEDD5',
+  				'deep-orange': '#C2410C'
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

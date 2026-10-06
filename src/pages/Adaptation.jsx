@@ -9,29 +9,45 @@ import { getCountry } from "@/data/countries";
 import { getCuisine } from "@/data/cuisines";
 import { getCategory } from "@/data/categories";
 import ContributeDialog from "@/components/ContributeDialog";
+import CommentsSection from "@/components/CommentsSection";
+import InteractionBar from "@/components/InteractionBar";
+import LocalTwistsSection from "@/components/LocalTwistsSection";
+import SaveRecipeButton from "@/components/SaveRecipeButton";
+import MyListCount from "@/components/MyListCount";
+import IngredientBudgetList from "@/components/IngredientBudgetList";
 import { useToast } from "@/components/ui/use-toast";
+import { getViewerId } from "@/lib/current-user";
+import { languageForCountry } from "@/lib/AppContext";
 
 export default function Adaptation() {
   const { recipeId, countryCode } = useParams();
   const navigate = useNavigate();
   const { data: recipe, isLoading } = useRecipe(recipeId);
   const [contributeOpen, setContributeOpen] = useState(false);
+  const [contentTab, setContentTab] = useState("recipe");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const deleteAdaptation = useDeleteAdaptation(recipeId);
   const { toast } = useToast();
   const destCode = (countryCode || "").toUpperCase();
   const adaptation =
     recipe?.adaptations?.find((a) => a.destinationCountry === destCode) || null;
+  const interactionId = adaptation ? `${recipeId}--${destCode}` : null;
+  const isOwner = Boolean(adaptation?.owner) && adaptation.owner === getViewerId();
 
   const handleDelete = () => {
-    if (!window.confirm("Delete this adaptation? This cannot be undone.")) return;
-    deleteAdaptation.mutate(destCode, {
-      onSuccess: () => {
-        toast({ title: "Adaptation deleted" });
-        navigate(`/recipes/${recipeId}`);
+    deleteAdaptation.mutate(
+      { countryCode: destCode, owner: getViewerId() },
+      {
+        onSuccess: () => {
+          toast({ title: "Adaptation deleted" });
+          navigate(`/recipes/${recipeId}`);
+        },
+        onError: (err) => {
+          setConfirmDelete(false);
+          toast({ title: "Couldn't delete adaptation", description: err.message, variant: "destructive" });
+        },
       },
-      onError: (err) =>
-        toast({ title: "Couldn't delete adaptation", description: err.message, variant: "destructive" }),
-    });
+    );
   };
 
   if (isLoading) {
@@ -58,27 +74,38 @@ export default function Adaptation() {
   const lang = recipe.originalLanguage ? { flag: "", name: recipe.originalLanguage } : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
       <Link to={`/recipes/${recipe.id}`} className="inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-stone-800">
         <span aria-hidden="true" className="text-base">←</span> Back to recipe
       </Link>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
-        <span className="rounded-full bg-stone-100 px-3 py-1 font-medium text-stone-600">{origin?.flag} {origin?.name}</span>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+        <span className="rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-600">{origin?.flag} {origin?.name}</span>
         <span className="text-stone-400">{recipe.name}</span>
         <span aria-hidden="true" className="text-base text-amber-500">↓</span>
-        <span className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-700">Adapted to {dest?.flag} {dest?.name}</span>
+        <span className="rounded-full bg-amber-100 px-2.5 py-1 font-medium text-amber-700">Adapted to {dest?.flag} {dest?.name}</span>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <section className="mt-5 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+        <div role="tablist" aria-label="Recipe content" className="flex overflow-x-auto border-b border-stone-200 bg-stone-50 p-2">
+          {[['recipe', 'Recipe ingredients'], ['adaptation', 'Adaptation ingredients'], ['tips', 'Tips']].map(([key, label]) => <button key={key} role="tab" aria-selected={contentTab === key} onClick={() => setContentTab(key)} className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${contentTab === key ? "bg-white text-amber-800 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}>{label}</button>)}
+        </div>
+        <div className="p-4 sm:p-5">
+          {contentTab === "recipe" && <div><h2 className="mb-2 font-semibold text-stone-800">{recipe.name} · {origin?.name}</h2><IngredientBudgetList ingredients={recipe.ingredients} ingredientCosts={recipe.ingredientCosts} budgetAdjustment={recipe.budgetAdjustment} country={origin} /></div>}
+          {contentTab === "adaptation" && (adaptation ? <div><h2 className="mb-2 font-semibold text-stone-800">{adaptation.title} · {dest?.name}</h2><IngredientBudgetList ingredients={adaptation.ingredients} ingredientCosts={adaptation.ingredientCosts} budgetAdjustment={adaptation.budgetAdjustment} country={dest} /></div> : <p className="py-6 text-center text-sm text-stone-500">No adaptation ingredients have been added yet.</p>)}
+          {contentTab === "tips" && (adaptation ? <LocalTwistsSection recipeId={recipe.id} countryCode={destCode} embedded /> : <p className="py-6 text-center text-sm text-stone-500">Tips will appear when this adaptation is available.</p>)}
+        </div>
+      </section>
+
+      <div id="adaptation" className="mt-4 scroll-mt-36 grid items-start gap-4 lg:grid-cols-2">
         {/* Original */}
-        <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-stone-400">Original Recipe</span>
             <StatusBadge status={recipe.status} />
           </div>
-          <div className="mt-3 flex items-center gap-3">
-            <span className="text-4xl">{origin?.flag}</span>
+          <div className="mt-2.5 flex items-center gap-3">
+            <span className="text-3xl">{origin?.flag}</span>
             <div>
               <h2 className="text-xl font-semibold text-stone-800">{recipe.name}</h2>
               <p className="text-sm text-stone-400">{origin?.name} · {cuisine?.name} · {category?.name}</p>
@@ -89,58 +116,76 @@ export default function Adaptation() {
           )}
           <p className="mt-1 text-xs text-stone-400">Original language: {lang?.flag} {lang?.name}</p>
 
-          <h3 className="mt-5 text-sm font-semibold text-stone-700">Ingredients</h3>
-          <ul className="mt-2 space-y-2">
-            {recipe.ingredients.map((ing, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-stone-600">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                {ing}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-5 flex items-center gap-2 text-xs text-stone-400">
+          <div className="mt-3 flex items-center gap-2 text-xs text-stone-400">
             <span aria-hidden="true" className="text-xs">👥</span> {recipe.servingSize} servings
           </div>
         </div>
 
         {/* Adaptation */}
         {adaptation ? (
-          <div className="rounded-3xl border border-amber-200 bg-amber-50/40 p-6 shadow-sm">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 shadow-sm sm:p-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-amber-600">Adapted to</span>
               <div className="flex items-center gap-2">
                 <StatusBadge status={adaptation.status} />
-                <button
-                  onClick={handleDelete}
-                  disabled={deleteAdaptation.isPending}
-                  aria-label="Delete adaptation"
-                  className="rounded-full p-1.5 text-stone-300 transition hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {isOwner && (
+                  confirmDelete ? (
+                    <span className="flex items-center gap-1.5">
+                      <button
+                        onClick={handleDelete}
+                        disabled={deleteAdaptation.isPending}
+                        className="rounded-full bg-red-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {deleteAdaptation.isPending ? "Deleting..." : "Delete"}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(false)}
+                        disabled={deleteAdaptation.isPending}
+                        className="rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-600 transition hover:bg-white"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDelete(true)}
+                      aria-label="Delete adaptation"
+                      className="rounded-full p-1.5 text-stone-300 transition hover:bg-red-50 hover:text-red-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )
+                )}
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="text-4xl">{dest?.flag}</span>
+            <div className="mt-2.5 flex items-center gap-3">
+              <span className="text-3xl">{dest?.flag}</span>
               <div>
                 <h2 className="text-xl font-semibold text-stone-800">{adaptation.title}</h2>
                 <p className="text-sm text-stone-500">{dest?.name} · {adaptation.adaptationType}</p>
               </div>
             </div>
 
-            <h3 className="mt-5 text-sm font-semibold text-stone-700">Ingredients</h3>
-            <ul className="mt-2 space-y-2">
-              {adaptation.ingredients.map((ing, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm text-stone-600">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                  {ing}
-                </li>
-              ))}
-            </ul>
+            <div className="mt-3">
+              <div className="flex flex-wrap items-center gap-3"><SaveRecipeButton recipeId={recipe.id} adaptationCountry={destCode} title={adaptation.title} /><MyListCount recipeId={recipe.id} adaptationCountry={destCode} /></div>
+            </div>
 
-            <div className="mt-5 space-y-2.5 border-t border-amber-200/70 pt-5">
+            {adaptation.image && adaptation.image.startsWith("/") && (
+              <div className="mt-3 overflow-hidden rounded-xl border border-amber-200">
+                <img
+                  src={adaptation.image}
+                  alt={adaptation.title}
+                  className="h-52 w-full object-cover"
+                />
+                <p className="bg-white/70 px-3 py-1.5 text-xs text-stone-500">
+                  Cooked version shared by {adaptation.contributor || "a community member"}
+                </p>
+              </div>
+            )}
+
+            <div className="mt-4 space-y-2 border-t border-amber-200/70 pt-4">
               <Row icon={<span aria-hidden="true" className="text-xs">📍</span>} label="Ingredient Availability" value={adaptation.availability} />
-              <Row
+              {!adaptation.ingredientCosts?.length && <Row
                 icon={<span aria-hidden="true" className="text-xs">🪙</span>}
                 label="Estimated Local Cost"
                 value={
@@ -148,13 +193,15 @@ export default function Adaptation() {
                     ? `${dest?.currencySymbol}${adaptation.estimatedLocalCost} ${dest?.currency}`
                     : "Not provided yet"
                 }
-              />
+              />}
               <Row icon={<span aria-hidden="true" className="text-xs">👥</span>} label="Serving Size" value={`${adaptation.servingSize} servings`} />
               <Row icon={<span aria-hidden="true" className="text-xs">📝</span>} label="Adaptation Contributor" value={adaptation.contributor} />
             </div>
 
+            {adaptation.collaborators?.length > 0 && <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-stone-500"><span>Made with</span>{adaptation.collaborators.map((person) => <Link key={person.id} to={`/members/${encodeURIComponent(person.username)}`} className="rounded-full border border-amber-200 bg-white px-2.5 py-1 font-medium text-amber-800 hover:bg-amber-50">@{person.username}</Link>)}</div>}
+
             {adaptation.notes && (
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-white/70 p-4">
+              <div className="mt-4 rounded-xl border border-amber-200 bg-white/70 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-amber-600">Adaptation Notes</p>
                 <p className="mt-2 text-sm leading-relaxed text-stone-600">{adaptation.notes}</p>
               </div>
@@ -182,7 +229,7 @@ export default function Adaptation() {
 
       {/* Other adaptations */}
       {recipe.adaptations.length > 1 && (
-        <div className="mt-10">
+          <div className="mt-6">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-stone-400">Other adaptations of this recipe</h3>
           <div className="mt-4 flex flex-wrap gap-2">
             {recipe.adaptations.map((/** @type {{ destinationCountry: any; id: any; }} */ a) => {
@@ -205,6 +252,16 @@ export default function Adaptation() {
             })}
           </div>
         </div>
+      )}
+
+      {adaptation && (
+        <>
+      <div className="mt-6 rounded-2xl border border-amber-100 bg-white px-4">
+            <p className="pt-3 text-sm font-medium text-stone-700">Like or comment on this local adaptation</p>
+            <InteractionBar interactionId={interactionId} commentsHref="#comments" />
+          </div>
+          <CommentsSection recipeId={interactionId} />
+        </>
       )}
 
       <ContributeDialog

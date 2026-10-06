@@ -1,9 +1,12 @@
 import re
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..models import NewRecipe, Recipe
 from ..seed import RECIPES, get_recipe
+from .. import account_store
+from .accounts import current_account
+from .local_twists import discard_recipe_twists
 
 router = APIRouter(prefix="/api/recipes", tags=["recipes"])
 
@@ -33,18 +36,24 @@ def list_recipes(
 
 
 @router.post("", response_model=Recipe, status_code=201)
-def create_recipe(payload: NewRecipe):
+def create_recipe(payload: NewRecipe, account=Depends(current_account)):
     base_id = re.sub(r"[^a-z0-9]+", "-", payload.name.lower()).strip("-") or "recipe"
     recipe_id = base_id
     suffix = 2
     while get_recipe(recipe_id) is not None:
         recipe_id = f"{base_id}-{suffix}"
         suffix += 1
+    data = payload.model_dump(exclude={"country", "owner"})
+    data["owner"] = account["id"]
+    try:
+        data["collaborators"] = account_store.get_public_accounts_by_ids(data["collaborators"])
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     recipe = Recipe(
         id=recipe_id,
         status="pending",
         country=payload.country.upper(),
-        **payload.model_dump(exclude={"country"}),
+        **data,
     )
     RECIPES.append(recipe)
     return recipe
@@ -59,8 +68,14 @@ def read_recipe(recipe_id: str):
 
 
 @router.delete("/{recipe_id}", status_code=204)
-def delete_recipe(recipe_id: str):
+def delete_recipe(recipe_id: str, owner: str = Query(...)):
     recipe = get_recipe(recipe_id)
     if recipe is None:
         raise HTTPException(status_code=404, detail="Recipe not found")
+    if recipe.owner != owner:
+        raise HTTPException(
+            status_code=403,
+            detail="Only the person who added this recipe can delete it.",
+        )
+    discard_recipe_twists(recipe_id)
     RECIPES.remove(recipe)

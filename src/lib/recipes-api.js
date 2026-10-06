@@ -1,28 +1,61 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { RECIPES, getRecipe } from "@/data/recipes";
+import { getSessionToken } from "@/lib/accounts-api";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 
 async function request(url, options) {
-  const res = await fetch(url, options);
+  let res;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: { ...(getSessionToken() ? { Authorization: `Bearer ${getSessionToken()}` } : {}), ...options?.headers },
+    });
+  } catch {
+    const error = new Error("The community service could not be reached. Please try again later.");
+    error.status = 0;
+    throw error;
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const detail = typeof body.detail === "string" ? body.detail : null;
-    throw new Error(detail || `Request failed (${res.status})`);
+    const message = detail || (res.status === 404
+      ? "The community service is not available yet. Please try again later."
+      : `The request could not be completed (${res.status}). Please try again.`);
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
   }
   return res.status === 204 ? null : res.json();
 }
 
+const usePublicFallback = (error) => error?.status === 404 || error?.status === 0;
+
 export function useRecipes() {
   return useQuery({
     queryKey: ["recipes"],
-    queryFn: () => request("/api/recipes"),
+    queryFn: async () => {
+      try {
+        return await request("/api/recipes");
+      } catch (error) {
+        if (usePublicFallback(error)) return RECIPES;
+        throw error;
+      }
+    },
   });
 }
 
 export function useRecipe(recipeId) {
   return useQuery({
     queryKey: ["recipes", recipeId],
-    queryFn: () => request(`/api/recipes/${encodeURIComponent(recipeId)}`),
+    queryFn: async () => {
+      try {
+        return await request(`/api/recipes/${encodeURIComponent(recipeId)}`);
+      } catch (error) {
+        if (usePublicFallback(error)) return getRecipe(recipeId) || null;
+        throw error;
+      }
+    },
     enabled: Boolean(recipeId),
   });
 }
@@ -60,8 +93,11 @@ export function useCreateAdaptation(recipeId) {
 export function useDeleteRecipe() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (recipeId) =>
-      request(`/api/recipes/${encodeURIComponent(recipeId)}`, { method: "DELETE" }),
+    mutationFn: ({ recipeId, owner }) =>
+      request(
+        `/api/recipes/${encodeURIComponent(recipeId)}?owner=${encodeURIComponent(owner)}`,
+        { method: "DELETE" },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["recipes"] });
     },
@@ -71,9 +107,9 @@ export function useDeleteRecipe() {
 export function useDeleteAdaptation(recipeId) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (countryCode) =>
+    mutationFn: ({ countryCode, owner }) =>
       request(
-        `/api/recipes/${encodeURIComponent(recipeId)}/adaptations/${encodeURIComponent(countryCode)}`,
+        `/api/recipes/${encodeURIComponent(recipeId)}/adaptations/${encodeURIComponent(countryCode)}?owner=${encodeURIComponent(owner)}`,
         { method: "DELETE" },
       ),
     onSuccess: () => {
@@ -85,7 +121,14 @@ export function useDeleteAdaptation(recipeId) {
 export function useComments(recipeId) {
   return useQuery({
     queryKey: ["comments", recipeId],
-    queryFn: () => request(`/api/recipes/${encodeURIComponent(recipeId)}/comments`),
+    queryFn: async () => {
+      try {
+        return await request(`/api/recipes/${encodeURIComponent(recipeId)}/comments`);
+      } catch (error) {
+        if (usePublicFallback(error)) return [];
+        throw error;
+      }
+    },
     enabled: Boolean(recipeId),
   });
 }
@@ -119,26 +162,111 @@ export function useDeleteComment(recipeId) {
   });
 }
 
-export function useRating(recipeId) {
+export function useLike(recipeId, user) {
   return useQuery({
-    queryKey: ["rating", recipeId],
-    queryFn: () => request(`/api/recipes/${encodeURIComponent(recipeId)}/rating`),
-    enabled: Boolean(recipeId),
+    queryKey: ["like", recipeId, user],
+    queryFn: async () => {
+      try {
+        return await request(`/api/recipes/${encodeURIComponent(recipeId)}/like?user=${encodeURIComponent(user)}`);
+      } catch (error) {
+        if (usePublicFallback(error)) return { liked: false, count: 0 };
+        throw error;
+      }
+    },
+    enabled: Boolean(recipeId && user),
   });
 }
 
-export function useRateRecipe(recipeId) {
+export function useToggleLike(recipeId, user) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (stars) =>
-      request(`/api/recipes/${encodeURIComponent(recipeId)}/rating`, {
+    mutationFn: () =>
+      request(`/api/recipes/${encodeURIComponent(recipeId)}/like`, {
         method: "POST",
         headers: JSON_HEADERS,
-        body: JSON.stringify({ stars }),
+        body: JSON.stringify({ user }),
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rating", recipeId] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(["like", recipeId, user], data);
+      queryClient.invalidateQueries({ queryKey: ["likers", recipeId] });
     },
+  });
+}
+
+export function useLikers(recipeId, enabled) {
+  return useQuery({
+    queryKey: ["likers", recipeId],
+    queryFn: () => request(`/api/recipes/${encodeURIComponent(recipeId)}/likers`),
+    enabled: Boolean(recipeId && enabled),
+  });
+}
+
+export function useLocalTwists(recipeId, countryCode, accountId) {
+  const tipsPath = countryCode
+    ? `/adaptations/${encodeURIComponent(countryCode)}/twists`
+    : "/tips";
+  return useQuery({
+    queryKey: ["localTwists", recipeId, countryCode, accountId],
+    queryFn: async () => {
+      try {
+        return await request(`/api/recipes/${encodeURIComponent(recipeId)}${tipsPath}`);
+      } catch (error) {
+        if (usePublicFallback(error)) return [];
+        throw error;
+      }
+    },
+    enabled: Boolean(recipeId && accountId),
+  });
+}
+
+export function useCreateLocalTwist(recipeId, countryCode, accountId) {
+  const queryClient = useQueryClient();
+  const tipsPath = countryCode
+    ? `/adaptations/${encodeURIComponent(countryCode)}/twists`
+    : "/tips";
+  return useMutation({
+    mutationFn: (payload) =>
+      request(
+        `/api/recipes/${encodeURIComponent(recipeId)}${tipsPath}`,
+        {
+          method: "POST",
+          headers: JSON_HEADERS,
+          body: JSON.stringify(payload),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["localTwists", recipeId, countryCode] });
+      queryClient.invalidateQueries({ queryKey: ["accountTips"] });
+    },
+  });
+}
+
+export function useVoteLocalTwist(recipeId, countryCode, accountId) {
+  const queryClient = useQueryClient();
+  const tipsPath = countryCode
+    ? `/adaptations/${encodeURIComponent(countryCode)}/twists`
+    : "/tips";
+  return useMutation({
+    mutationFn: ({ twistId, value }) =>
+      request(
+        `/api/recipes/${encodeURIComponent(recipeId)}${tipsPath}/${encodeURIComponent(twistId)}/vote`,
+        {
+          method: "POST",
+          headers: JSON_HEADERS,
+          body: JSON.stringify({ value }),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["localTwists", recipeId, countryCode] });
+    },
+  });
+}
+
+export function useMealPlanCount(recipeId, adaptationCountry = "") {
+  return useQuery({
+    queryKey: ["mealPlanCount", recipeId, adaptationCountry],
+    queryFn: () => request(`/api/accounts/meal-plan-count/${encodeURIComponent(recipeId)}?adaptationCountry=${encodeURIComponent(adaptationCountry || "")}`),
+    enabled: Boolean(recipeId),
   });
 }
 

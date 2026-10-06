@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ImageIcon, Loader2, Plus, X } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { ImageIcon, Loader2, Plus, Search, UserPlus, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,11 @@ import { CUISINES } from "@/data/cuisines";
 import { CATEGORIES } from "@/data/categories";
 import { LANGUAGES } from "@/data/languages";
 import { uploadImage, useCreateAdaptation, useCreateRecipe } from "@/lib/recipes-api";
+import { getCurrentUser, resolveOwner } from "@/lib/current-user";
+import { useAuth } from "@/lib/AuthContext";
+import { useSearchAccounts } from "@/lib/accounts-api";
+import IngredientBudgetEditor, { ingredientCostsPayload } from "@/components/IngredientBudgetEditor";
+import { useApp } from "@/lib/AppContext";
 
 const ADAPTATION_TYPES = [
   "Family / local Adaptation",
@@ -56,6 +62,8 @@ export default function ContributeDialog({
   defaultCountry = "",
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
   const [tab, setTab] = useState(recipe ? "adaptation" : "recipe");
 
   useEffect(() => {
@@ -76,6 +84,14 @@ export default function ContributeDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {!isAuthenticated ? (
+          <div className="py-5 text-center">
+            <p className="text-sm leading-relaxed text-stone-600">Sign in first so your recipe or local adaptation is saved under your community profile.</p>
+            <div className="mt-5 flex justify-center gap-3">
+              <Button asChild className="bg-amber-600 hover:bg-amber-700"><Link to={`/login?returnTo=${encodeURIComponent(location.pathname)}`}>Continue to WorldPlate Culina</Link></Button>
+            </div>
+          </div>
+        ) : <>
         {recipe && (
           <div className="flex gap-1 rounded-full bg-stone-100 p-1 text-sm">
             <TabButton active={tab === "adaptation"} onClick={() => setTab("adaptation")}>
@@ -93,6 +109,7 @@ export default function ContributeDialog({
               key={`adaptation-${String(open)}`}
               recipe={recipe}
               defaultCountry={defaultCountry}
+              user={user}
               onDone={(country) => {
                 onOpenChange(false);
                 navigate(`/recipes/${recipe.id}/adapt/${country}`);
@@ -100,6 +117,7 @@ export default function ContributeDialog({
             />
           ) : (
             <RecipeForm
+              user={user}
               key={`recipe-${String(open)}`}
               onDone={(id) => {
                 onOpenChange(false);
@@ -108,6 +126,7 @@ export default function ContributeDialog({
             />
           )}
         </div>
+        </>}
       </DialogContent>
     </Dialog>
   );
@@ -146,15 +165,84 @@ function FormError({ children }) {
   );
 }
 
-function AdaptationForm({ recipe, defaultCountry, onDone }) {
+function PhotoField({ label, value, onChange }) {
+  const inputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      onChange(await uploadImage(file));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <Field label={label}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        onChange={handleFile}
+        className="hidden"
+      />
+      {value ? (
+        <div className="relative h-36 w-full overflow-hidden rounded-md border border-stone-200">
+          <img src={value} alt="Preview" className="h-full w-full object-cover" />
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            aria-label="Remove photo"
+            className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 text-stone-500 shadow transition hover:text-red-500"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="flex h-24 w-full flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-stone-300 text-sm text-stone-400 transition hover:border-amber-400 hover:text-amber-600 disabled:opacity-60"
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" /> Uploading…
+            </>
+          ) : (
+            <>
+              <ImageIcon className="h-5 w-5" /> Add a photo (JPEG/PNG, max 5 MB)
+            </>
+          )}
+        </button>
+      )}
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </Field>
+  );
+}
+
+function AdaptationForm({ recipe, defaultCountry, onDone, user }) {
+  const { cookingCountry } = useApp();
   const [title, setTitle] = useState("");
-  const [country, setCountry] = useState(defaultCountry);
+  const [country, setCountry] = useState(defaultCountry || cookingCountry);
   const [adaptationType, setAdaptationType] = useState(ADAPTATION_TYPES[0]);
   const [ingredients, setIngredients] = useState("");
+  const [ingredientPrices, setIngredientPrices] = useState({});
+  const [budgetAdjustment, setBudgetAdjustment] = useState("");
   const [availability, setAvailability] = useState(AVAILABILITY_OPTIONS[1]);
   const [servingSize, setServingSize] = useState("");
-  const [contributor, setContributor] = useState("");
+  const [contributor, setContributor] = useState(user?.displayName || getCurrentUser());
+  const [collaborators, setCollaborators] = useState([]);
   const [notes, setNotes] = useState("");
+  const [image, setImage] = useState("");
   const [error, setError] = useState("");
   const createAdaptation = useCreateAdaptation(recipe.id);
 
@@ -171,9 +259,14 @@ function AdaptationForm({ recipe, defaultCountry, onDone }) {
         title: title.trim(),
         adaptationType,
         ingredients: parseLines(ingredients),
+        ingredientCosts: ingredientCostsPayload(ingredients, ingredientPrices),
+        budgetAdjustment: Number(budgetAdjustment) || 0,
         availability,
         servingSize: toIntOrNull(servingSize),
         contributor: contributor.trim() || null,
+        owner: user?.id || resolveOwner(contributor),
+        collaborators: collaborators.map((person) => person.id),
+        image,
         notes: notes.trim() || null,
       },
       {
@@ -232,6 +325,7 @@ function AdaptationForm({ recipe, defaultCountry, onDone }) {
           placeholder={"Chicken\nGarlic\nLocal substitute for …"}
         />
       </Field>
+      <IngredientBudgetEditor ingredientsText={ingredients} costs={ingredientPrices} onChange={setIngredientPrices} countryCode={country} adjustment={budgetAdjustment} onAdjustmentChange={setBudgetAdjustment} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Ingredient availability">
           <select
@@ -263,6 +357,12 @@ function AdaptationForm({ recipe, defaultCountry, onDone }) {
           placeholder="Community contributor"
         />
       </Field>
+      <CollaboratorField value={collaborators} onChange={setCollaborators} />
+      <PhotoField
+        label="Photo of your cooked version"
+        value={image}
+        onChange={setImage}
+      />
       <Field label="Adaptation notes">
         <textarea
           className={textareaClass}
@@ -281,36 +381,23 @@ function AdaptationForm({ recipe, defaultCountry, onDone }) {
   );
 }
 
-function RecipeForm({ onDone }) {
+function RecipeForm({ onDone, user }) {
+  const { cookingCountry } = useApp();
   const [name, setName] = useState("");
-  const [country, setCountry] = useState("");
+  const [country, setCountry] = useState(cookingCountry);
   const [cuisine, setCuisine] = useState("");
   const [category, setCategory] = useState("");
   const [originalLanguage, setOriginalLanguage] = useState("en");
   const [ingredients, setIngredients] = useState("");
+  const [ingredientPrices, setIngredientPrices] = useState({});
+  const [budgetAdjustment, setBudgetAdjustment] = useState("");
   const [preparation, setPreparation] = useState("");
   const [servingSize, setServingSize] = useState("");
-  const [contributor, setContributor] = useState("");
+  const [contributor, setContributor] = useState(user?.displayName || getCurrentUser());
+  const [collaborators, setCollaborators] = useState([]);
   const [image, setImage] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const fileInputRef = useRef(null);
   const createRecipe = useCreateRecipe();
-
-  const handlePhoto = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setUploading(true);
-    setError("");
-    try {
-      setImage(await uploadImage(file));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -327,9 +414,13 @@ function RecipeForm({ onDone }) {
         category: category || null,
         originalLanguage,
         ingredients: parseLines(ingredients),
+        ingredientCosts: ingredientCostsPayload(ingredients, ingredientPrices),
+        budgetAdjustment: Number(budgetAdjustment) || 0,
         preparation: preparation.trim(),
         servingSize: toIntOrNull(servingSize),
         contributor: contributor.trim() || null,
+        owner: user?.id || resolveOwner(contributor),
+        collaborators: collaborators.map((person) => person.id),
         image,
       },
       {
@@ -350,45 +441,7 @@ function RecipeForm({ onDone }) {
       <Field label="Recipe name" required>
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Pancit Canton" />
       </Field>
-      <Field label="Food photo">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp"
-          onChange={handlePhoto}
-          className="hidden"
-        />
-        {image ? (
-          <div className="relative h-36 w-full overflow-hidden rounded-md border border-stone-200">
-            <img src={image} alt="Recipe" className="h-full w-full object-cover" />
-            <button
-              type="button"
-              onClick={() => setImage("")}
-              aria-label="Remove photo"
-              className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 text-stone-500 shadow transition hover:text-red-500"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex h-24 w-full flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-stone-300 text-sm text-stone-400 transition hover:border-amber-400 hover:text-amber-600 disabled:opacity-60"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" /> Uploading…
-              </>
-            ) : (
-              <>
-                <ImageIcon className="h-5 w-5" /> Add a photo of the dish (JPEG/PNG, max 5 MB)
-              </>
-            )}
-          </button>
-        )}
-      </Field>
+      <PhotoField label="Food photo" value={image} onChange={setImage} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Country of origin" required>
           <select className={selectClass} value={country} onChange={(e) => setCountry(e.target.value)}>
@@ -445,6 +498,7 @@ function RecipeForm({ onDone }) {
           placeholder={"Rice\nOnion\n…"}
         />
       </Field>
+      <IngredientBudgetEditor ingredientsText={ingredients} costs={ingredientPrices} onChange={setIngredientPrices} countryCode={country} adjustment={budgetAdjustment} onAdjustmentChange={setBudgetAdjustment} />
       <Field label="Preparation">
         <textarea
           className={textareaClass}
@@ -472,11 +526,33 @@ function RecipeForm({ onDone }) {
           />
         </Field>
       </div>
+      <CollaboratorField value={collaborators} onChange={setCollaborators} />
       <FormError>{error}</FormError>
       <Button type="submit" className="w-full" disabled={createRecipe.isPending}>
         {createRecipe.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
         Submit recipe
       </Button>
     </form>
+  );
+}
+
+function CollaboratorField({ value, onChange }) {
+  const [query, setQuery] = useState("");
+  const { data: matches = [], isFetching } = useSearchAccounts(query);
+  const addCollaborator = (person) => {
+    if (!value.some((item) => item.id === person.id)) onChange([...value, person]);
+    setQuery("");
+  };
+  return (
+    <Field label="Add collaborators (optional)">
+      <div className="space-y-2">
+        <div className="flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border border-input px-2 py-1.5">
+          {value.map((person) => <span key={person.id} className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-900">@{person.username}<button type="button" onClick={() => onChange(value.filter((item) => item.id !== person.id))} aria-label={`Remove ${person.username}`} className="rounded-full p-0.5 hover:bg-amber-100"><X className="h-3 w-3" /></button></span>)}
+          <div className="flex min-w-[150px] flex-1 items-center gap-2 px-1"><Search className="h-3.5 w-3.5 text-stone-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search member name" className="h-7 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" /></div>
+        </div>
+        {query.trim().length >= 2 && <div className="max-h-36 overflow-y-auto rounded-xl border border-stone-200 bg-white shadow-sm">{isFetching ? <p className="px-3 py-2 text-xs text-stone-500">Searching members…</p> : matches.filter((person) => !value.some((item) => item.id === person.id)).length ? matches.filter((person) => !value.some((item) => item.id === person.id)).map((person) => <button key={person.id} type="button" onClick={() => addCollaborator(person)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-amber-50"><UserPlus className="h-4 w-4 text-amber-700" /><span className="font-medium text-stone-800">{person.displayName}</span><span className="text-xs text-stone-500">@{person.username}</span></button>) : <p className="px-3 py-2 text-xs text-stone-500">No other members found.</p>}</div>}
+        <p className="text-xs text-stone-500">Selected members will also see this in their profile contributions.</p>
+      </div>
+    </Field>
   );
 }

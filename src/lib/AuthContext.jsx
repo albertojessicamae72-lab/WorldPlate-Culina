@@ -1,148 +1,80 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { appParams } from '@/lib/app-params';
+import { createContext, useContext, useMemo, useState } from "react";
+import { setAccountIdentity } from "@/lib/community-profile";
+import { continueWithAccount, createAccount, findAccount, getSessionToken, resetAccountPassword, revokeAccountSession } from "@/lib/accounts-api";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
+const SESSION_KEY = "culina:local-session";
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
-  const [authError, setAuthError] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
-
-  useEffect(() => {
-    checkAppState();
-  }, []);
-
-  const checkAppState = async () => {
-    try {
-      setIsLoadingPublicSettings(true);
-      setAuthError(null);
-      
-      try {
-        const publicSettings = await base44.app.getPublicSettings();
-        setAppPublicSettings(publicSettings);
-        
-        // If we got the app public settings successfully, check if user is authenticated
-        if (appParams.token) {
-          await checkUserAuth();
-        } else {
-          setIsLoadingAuth(false);
-          setIsAuthenticated(false);
-          setAuthChecked(true);
-        }
-        setIsLoadingPublicSettings(false);
-      } catch (appError) {
-        console.error('App state check failed:', appError);
-        
-        // Handle app-level errors
-        if (appError.status === 403 && appError.data?.extra_data?.reason) {
-          const reason = appError.data.extra_data.reason;
-          if (reason === 'auth_required') {
-            setAuthError({
-              type: 'auth_required',
-              message: 'Authentication required'
-            });
-          } else if (reason === 'user_not_registered') {
-            setAuthError({
-              type: 'user_not_registered',
-              message: 'User not registered for this app'
-            });
-          } else {
-            setAuthError({
-              type: reason,
-              message: appError.message
-            });
-          }
-        } else {
-          setAuthError({
-            type: 'unknown',
-            message: appError.message || 'Failed to load app'
-          });
-        }
-        setIsLoadingPublicSettings(false);
-        setIsLoadingAuth(false);
-      }
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      setAuthError({
-        type: 'unknown',
-        message: error.message || 'An unexpected error occurred'
-      });
-      setIsLoadingPublicSettings(false);
-      setIsLoadingAuth(false);
-    }
-  };
-
-  const checkUserAuth = async () => {
-    try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
-    } catch (error) {
-      console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      setAuthChecked(true);
-      
-      // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
-      }
-    }
-  };
-
-  const logout = (shouldRedirect = true) => {
-    setUser(null);
-    setIsAuthenticated(false);
-    
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
-      base44.auth.logout(window.location.href);
-    } else {
-      // Just remove the token without redirect
-      base44.auth.logout();
-    }
-  };
-
-  const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
-  };
-
-  return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
-      isLoadingAuth,
-      isLoadingPublicSettings,
-      authError,
-      appPublicSettings,
-      authChecked,
-      logout,
-      navigateToLogin,
-      checkUserAuth,
-      checkAppState
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+function readSession() {
+  try {
+    const value = localStorage.getItem(SESSION_KEY);
+    const user = value ? JSON.parse(value) : null;
+    return user?.username && user?.token ? user : null;
+  } catch {
+    return null;
   }
+}
+
+const asUser = (account) => ({ ...account, full_name: account.displayName, name: account.displayName, email: "" });
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(readSession);
+
+  const setSession = (account, token) => {
+    const accountUser = asUser(account);
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ ...accountUser, token }));
+      localStorage.setItem("localplate:username", accountUser.displayName);
+    } catch {
+      // The in-memory session still works for this tab if browser storage is disabled.
+    }
+    setAccountIdentity(accountUser);
+    setUser(accountUser);
+    return accountUser;
+  };
+
+  const login = async (username, password) => { const result = await findAccount(username, password); return setSession(result.account, result.token); };
+  const enter = async (nameOrUsername, password) => { const result = await continueWithAccount(nameOrUsername, password); setSession(result.account, result.token); return { created: result.created }; };
+  const register = async (displayName, password, interests, recoveryQuestion, recoveryAnswer) => { const result = await createAccount(displayName, password, interests, recoveryQuestion, recoveryAnswer); return setSession(result.account, result.token); };
+  const recoverPassword = (username, question, answer, newPassword) => resetAccountPassword(username, question, answer, newPassword);
+  const updateUser = (account) => setSession(account, getSessionToken());
+
+  const logout = async (shouldRedirect = true) => {
+    try { await revokeAccountSession(); } catch { /* Clear local session even if server is offline. */ }
+    try {
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem("culina:identity");
+    } catch {
+      // The in-memory session will still be cleared.
+    }
+    setAccountIdentity(null);
+    setUser(null);
+    if (shouldRedirect && typeof window !== "undefined") window.location.assign("/login");
+  };
+
+  const value = useMemo(() => ({
+    user,
+    isAuthenticated: Boolean(user),
+    isLoadingAuth: false,
+    isLoadingPublicSettings: false,
+    authChecked: true,
+    authError: null,
+    appPublicSettings: null,
+    login,
+    enter,
+    register,
+    recoverPassword,
+    updateUser,
+    logout,
+    checkUserAuth: async () => Boolean(user),
+    checkAppState: async () => Boolean(user),
+  }), [user]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
-};
+}

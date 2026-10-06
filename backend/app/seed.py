@@ -10,7 +10,8 @@ RECIPES: list[Recipe] = [
         originalLanguage="ar",
         originalTitle="ملوخية",
         contributor="Community contributor",
-        image="",
+        owner="localplate",
+        image="/images/molokhiya.png",
         ingredients=[
             "Molokhiya Leaves",
             "Chicken broth",
@@ -40,16 +41,27 @@ RECIPES: list[Recipe] = [
                 "ingredients": [
                     "Chicken",
                     "Garlic",
-                    "Blended saluyot",
+                    "Blended saluyot (2 bunches)",
                     "Maggi Magic Sarap",
                     "Salt",
                     "Onion",
                     "Oil",
                 ],
                 "availability": "Alternative documented",
-                "estimatedLocalCost": None,
+                "ingredientCosts": [
+                    {"ingredient": "Chicken", "amount": 100},
+                    {"ingredient": "Garlic", "amount": 5},
+                    {"ingredient": "Onion", "amount": 5},
+                    {"ingredient": "Oil", "amount": 5},
+                    {"ingredient": "Salt", "amount": 5},
+                    {"ingredient": "Maggi Magic Sarap", "amount": 5},
+                    {"ingredient": "Blended saluyot (2 bunches)", "amount": 20},
+                ],
+                "budgetAdjustment": 5,
+                "estimatedLocalCost": 150,
                 "servingSize": 4,
                 "contributor": "Community contributor",
+                "owner": "localplate",
                 "notes": (
                     "Filipino family adaptation. This is a local adaptation and not a claim "
                     "that saluyot is the exact traditional equivalent of molokhia."
@@ -67,7 +79,8 @@ RECIPES: list[Recipe] = [
         originalLanguage="fil",
         originalTitle="Chicken Adobo",
         contributor="Community contributor",
-        image="",
+        owner="localplate",
+        image="/images/chicken-adobo.png",
         ingredients=[
             "Chicken",
             "Soy sauce",
@@ -95,7 +108,3 @@ RECIPES: list[Recipe] = [
 
 def get_recipe(recipe_id: str) -> Recipe | None:
     return next((r for r in RECIPES if r.id == recipe_id), None)
-
-
-
-

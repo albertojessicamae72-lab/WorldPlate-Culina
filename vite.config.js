@@ -11,9 +11,10 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api/recipes': 'http://localhost:8000',
-      '/api/adaptations': 'http://localhost:8000',
-      '/api/uploads': 'http://localhost:8000',
+      '/api/accounts': 'http://127.0.0.1:8000',
+      '/api/recipes': 'http://127.0.0.1:8000',
+      '/api/adaptations': 'http://127.0.0.1:8000',
+      '/api/uploads': 'http://127.0.0.1:8000',
     },
   },
 })

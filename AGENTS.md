@@ -6,7 +6,7 @@ This is a Base44 app repository. Treat it as user-owned application code, keep c
 
 Start with `README.md` for local setup, environment variables, and publish workflow.
 
-## Base44 References
+##  References
 
 - CLI overview: https://docs.base44.com/developers/references/cli/get-started/overview.md
 - Agent skills: https://docs.base44.com/developers/backend/overview/skills.md
@@ -26,8 +26,8 @@ npx skills add base44/skills
 
 ## Working Notes
 
-- Use `base44 dev` as the default local development command when you need the local Base44 backend. It can run the backend and frontend together.
-- When docs or code mention the frontend being started automatically, that usually means the Base44 project config includes `site.serveCommand`, for example `"serveCommand": "npm run dev"` in `base44/config.jsonc`.
+- Use  dev` as the default local development command when you need the local Base44 backend. It can run the backend and frontend together.
+- When docs or code mention the frontend being started automatically, that usually means the Base44 project config includes `site.serveCommand`, for example `"serveCommand": "npm run dev"` in '/config.jsonc`.
 - Use `npm run dev` only for frontend-only work against the hosted Base44 backend.
 - Prefer the existing Base44 CLI workflow over adding new npm scripts for Base44-specific tasks.
 - Reuse the existing SDK client and Vite plugin patterns before adding new Base44 integration paths.
