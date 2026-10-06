@@ -1,7 +1,4 @@
 # Culina
-
-Culina is a React/Vite frontend backed by a FastAPI API and SQLite database. The project runs independently and does not require Base44.
-
 ## Prerequisites
 
 - Node.js and npm
