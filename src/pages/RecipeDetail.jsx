@@ -15,10 +15,12 @@ import CommentsSection from "@/components/CommentsSection";
 import IngredientBudgetList from "@/components/IngredientBudgetList";
 import MyListCount from "@/components/MyListCount";
 import LocalTwistsSection from "@/components/LocalTwistsSection";
+import CommunityTipsToggle from "@/components/CommunityTipsToggle";
 import InteractionBar from "@/components/InteractionBar";
 import { useToast } from "@/components/ui/use-toast";
 import { getViewerId } from "@/lib/current-user";
 import { useApp } from "@/lib/AppContext";
+import { useSetRecipeCommunityTips } from "@/lib/recipes-api";
 
 export default function RecipeDetail() {
   const { recipeId } = useParams();
@@ -28,6 +30,7 @@ export default function RecipeDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { data: recipe, isLoading } = useRecipe(recipeId);
   const deleteRecipe = useDeleteRecipe();
+  const updateCommunityTips = useSetRecipeCommunityTips(recipeId);
   const { toast } = useToast();
   const { language } = useApp();
 
@@ -110,7 +113,7 @@ export default function RecipeDetail() {
 
       {/* Header */}
       <div className="mt-4 flex flex-col gap-4 rounded-3xl border border-stone-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-5 sm:p-5">
-        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-linear-to-br from-amber-50 via-orange-50 to-rose-50 sm:h-28 sm:w-28">
+        <div className="h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-linear-to-br from-amber-50 via-orange-50 to-rose-50 sm:h-32 sm:w-32">
           {photoUrl ? (
             <img src={photoUrl} alt={recipe.name} className="h-full w-full object-cover" />
           ) : (
@@ -160,19 +163,78 @@ export default function RecipeDetail() {
         </button>
       </div>
 
-      <section className="mt-5 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+      {isOwner && (
+        <div className="mt-4 max-w-xl">
+          <CommunityTipsToggle
+            checked={Boolean(recipe.allowCommunityTips)}
+            onChange={(enabled) => updateCommunityTips.mutate(enabled, {
+              onError: (error) => toast({ title: "Couldn't update community tips", description: error.message, variant: "destructive" }),
+            })}
+            disabled={updateCommunityTips.isPending}
+          />
+        </div>
+      )}
+
+      <div className="mt-5 space-y-5">
+      <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
         <div role="tablist" aria-label="Recipe content" className="flex overflow-x-auto border-b border-stone-200 bg-stone-50 p-2">
-          {[['recipe', 'Recipe ingredients'], ['adaptations', 'Adaptation ingredients'], ['tips', 'Tips']].map(([key, label]) => <button key={key} role="tab" aria-selected={contentTab === key} onClick={() => setContentTab(key)} className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${contentTab === key ? "bg-white text-amber-800 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}>{label}</button>)}
+          {[['recipe', 'Recipe ingredients'], ['adaptations', 'Adaptation ingredients']].map(([key, label]) => <button key={key} role="tab" aria-selected={contentTab === key} onClick={() => setContentTab(key)} className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${contentTab === key ? "bg-white text-amber-800 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}>{label}</button>)}
         </div>
         <div className="p-4 sm:p-5">
-          {contentTab === "recipe" && <div><h2 className="text-base font-semibold text-stone-800">{recipe.name} · Ingredients</h2><IngredientBudgetList ingredients={recipe.ingredients} ingredientCosts={recipe.ingredientCosts} budgetAdjustment={recipe.budgetAdjustment} country={country} /><div className="mt-5 border-t border-stone-100 pt-4"><h2 className="text-base font-semibold text-stone-800">Preparation</h2><p className="mt-2 text-sm leading-relaxed text-stone-600">{recipe.preparation}</p></div>{recipe.estimatedCost != null && !recipe.ingredientCosts?.length && <div className="mt-4 flex items-center gap-2 rounded-xl bg-stone-50 px-3 py-2.5 text-sm text-stone-600"><Coins className="h-4 w-4 text-stone-400" />Estimated cost: <span className="font-medium">{country?.currencySymbol}{recipe.estimatedCost} {country?.currency}</span></div>}</div>}
-          {contentTab === "adaptations" && (recipe.adaptations.length ? <div className="space-y-4">{recipe.adaptations.map((adaptation) => { const adaptedCountry = getCountry(adaptation.destinationCountry); return <article key={adaptation.id} className="rounded-xl border border-amber-100 bg-amber-50/40 p-4"><div className="mb-2 flex items-center justify-between gap-3"><h2 className="font-semibold text-stone-800">{adaptedCountry?.flag} {adaptation.title}</h2><Link to={`/recipes/${recipe.id}/adapt/${adaptation.destinationCountry}`} className="shrink-0 text-sm font-medium text-amber-700 hover:underline">Open adaptation</Link></div><IngredientBudgetList ingredients={adaptation.ingredients} ingredientCosts={adaptation.ingredientCosts} budgetAdjustment={adaptation.budgetAdjustment} country={adaptedCountry} /></article>; })}</div> : <p className="py-6 text-center text-sm text-stone-500">No adaptations yet. Be the first to adapt this recipe.</p>)}
-          {contentTab === "tips" && <LocalTwistsSection recipeId={recipe.id} embedded />}
+          {contentTab === "recipe" && (
+            <div>
+              <h2 className="text-base font-semibold text-stone-800">{recipe.name} · Ingredients</h2>
+              <IngredientBudgetList ingredients={recipe.ingredients} ingredientCosts={recipe.ingredientCosts} budgetAdjustment={recipe.budgetAdjustment} country={country} />
+              <div className="mt-5 border-t border-stone-100 pt-4">
+                <h2 className="text-base font-semibold text-stone-800">Preparation</h2>
+                <p className="mt-2 text-sm leading-relaxed text-stone-600">{recipe.preparation}</p>
+              </div>
+              {recipe.estimatedCost != null && !recipe.ingredientCosts?.length && (
+                <div className="mt-4 flex items-center gap-2 rounded-xl bg-stone-50 px-3 py-2.5 text-sm text-stone-600">
+                  <Coins className="h-4 w-4 text-stone-400" />Estimated cost: <span className="font-medium">{country?.currencySymbol}{recipe.estimatedCost} {country?.currency}</span>
+                </div>
+              )}
+              <div className="mt-5 border-t border-stone-100 pt-4">
+                <LocalTwistsSection
+                  recipeId={recipe.id}
+                  allowCommunityTips={Boolean(recipe.allowCommunityTips)}
+                  scopeLabel={`Tips for ${recipe.name}`}
+                />
+              </div>
+            </div>
+          )}
+          {contentTab === "adaptations" && (
+            recipe.adaptations.length ? (
+              <div className="space-y-4">
+                {recipe.adaptations.map((adaptation) => {
+                  const adaptedCountry = getCountry(adaptation.destinationCountry);
+                  return (
+                    <article key={adaptation.id} className="rounded-xl border border-amber-100 bg-amber-50/40 p-4">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <h2 className="font-semibold text-stone-800">{adaptedCountry?.flag} {adaptation.title}</h2>
+                        <Link to={`/recipes/${recipe.id}/adapt/${adaptation.destinationCountry}`} className="shrink-0 text-sm font-medium text-amber-700 hover:underline">Open adaptation</Link>
+                      </div>
+                      <IngredientBudgetList ingredients={adaptation.ingredients} ingredientCosts={adaptation.ingredientCosts} budgetAdjustment={adaptation.budgetAdjustment} country={adaptedCountry} />
+                      <div className="mt-4 border-t border-amber-200/70 pt-4">
+                        <LocalTwistsSection
+                          recipeId={recipe.id}
+                          countryCode={adaptation.destinationCountry}
+                          allowCommunityTips={Boolean(adaptation.allowCommunityTips)}
+                          scopeLabel={`${adaptation.title} · ${adaptedCountry?.name}`}
+                        />
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="py-6 text-center text-sm text-stone-500">No adaptations yet. Be the first to adapt this recipe.</p>
+            )
+          )}
         </div>
       </section>
 
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-2">
-        <aside className="space-y-4">
+        <aside className="grid items-start gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-stone-200 bg-white p-4">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-stone-400">Translations</h3>
             <p className="mt-1 text-xs text-stone-400">Original language: <span className="font-medium text-stone-600">{lang?.flag} {lang?.name}</span></p>

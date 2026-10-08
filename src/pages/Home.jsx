@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles, Leaf, Clock3 } from "lucide-react";
+import { ArrowRight, House, Clock3 } from "lucide-react";
 import CountrySelector from "@/components/CountrySelector";
 import CuisineCard from "@/components/CuisineCard";
 import { CUISINES } from "@/data/cuisines";
@@ -18,6 +18,8 @@ export default function Home() {
   const [showAllCuisines, setShowAllCuisines] = useState(false);
   const featured = CUISINES.slice(0, 8);
   const visible = showAllCuisines ? CUISINES : featured;
+  const communityPosts = recipes.filter((recipe) => recipe.discoveryDescription).slice(0, 3);
+  const featuredRecipes = recipes.filter((recipe) => !recipe.discoveryDescription).slice(0, 3);
 
 
   return (
@@ -27,9 +29,6 @@ export default function Home() {
         <div className="absolute -right-24 -top-32 h-96 w-96 rounded-full bg-amber-200/40 blur-3xl" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 md:grid-cols-[1fr_0.9fr] md:gap-10 md:py-16">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white/70 px-3.5 py-1.5 text-xs font-medium text-amber-700">
-              <Sparkles className="h-3.5 w-3.5" /> {tr("tagline")}
-            </span>
             <h1 className="mt-5 text-3xl font-semibold leading-[1.14] tracking-tight text-stone-800 sm:text-4xl lg:text-5xl">
               {tr("heroTitle")}
               <br />
@@ -46,12 +45,6 @@ export default function Home() {
               >
                 {tr("exploreCuisines")} <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link
-                to="/recipes"
-                className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-400"
-              >
-                {tr("exploreRecipes")}
-              </Link>
             </div>
 
             <div className="mt-6 max-w-xs rounded-2xl bg-white/80 p-3 shadow-sm ring-1 ring-stone-200/70">
@@ -67,11 +60,11 @@ export default function Home() {
               <div className="flex items-center gap-2 text-sm font-semibold text-stone-800"><span className="text-lg">🇵🇭</span> {tr("madeForTable")}</div>
               <p className="mt-1 text-xs text-stone-500">{tr("recipesTravel")}</p>
             </div>
-            <Link to="/recipes/chicken-adobo" aria-label="Open the Chicken Adobo recipe" className="block overflow-hidden rounded-[1.75rem] bg-amber-100 shadow-xl shadow-amber-900/10 ring-4 ring-white/60 transition hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400">
-              <img src="/images/chicken-adobo.png" alt="A home-cooked Filipino chicken adobo" className="aspect-[4/3] w-full object-cover" />
+            <Link to="/recipes/molokhia" aria-label="Open the Egyptian Molokhiya recipe" className="block overflow-hidden rounded-[1.75rem] bg-amber-100 shadow-xl shadow-amber-900/10 ring-4 ring-white/60 transition hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400">
+              <img src="/images/molokhiya.png" alt="Egyptian Molokhiya" className="aspect-[4/3] w-full object-cover" />
             </Link>
             <div className="pointer-events-none absolute -bottom-4 right-2 flex items-center gap-2.5 rounded-2xl bg-white p-2.5 pr-4 shadow-xl sm:right-0">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Leaf className="h-5 w-5" /></span>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><House className="h-5 w-5" /></span>
               <div><p className="text-sm font-semibold text-stone-800">{tr("cookYourWay")}</p><p className="text-xs text-stone-500">{tr("localSwapsSoul")}</p></div>
             </div>
           </div>
@@ -130,6 +123,20 @@ export default function Home() {
         </div>
       </section>
 
+      {communityPosts.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight text-stone-800">Community food discoveries</h2>
+            <p className="mt-1 text-stone-500">Budget-friendly dishes and ideas shared by home cooks.</p>
+          </div>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {communityPosts.map((recipe) => (
+              <RecipeCardLite key={recipe.id} recipe={recipe} language={language} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Featured recipes */}
       <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
         <div className="flex items-end justify-between">
@@ -142,7 +149,7 @@ export default function Home() {
           </Link>
         </div>
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {recipes.slice(0, 3).map((r) => (
+          {featuredRecipes.map((r) => (
             <RecipeCardLite key={r.id} recipe={r} language={language} />
           ))}
         </div>
@@ -153,16 +160,21 @@ export default function Home() {
 }
 
 function RecipeCardLite({ recipe, language }) {
+  const image = recipe.image?.startsWith("/")
+    ? <img src={recipe.image} alt={recipe.name} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+    : <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100 text-7xl" aria-hidden="true">{recipe.image || "🍽️"}</div>;
   return (
     <article className="group overflow-hidden rounded-3xl border border-stone-200/80 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-xl">
-      <div className="relative h-48 overflow-hidden bg-amber-50">
+      <div className="relative aspect-[4/3] overflow-hidden bg-amber-50">
         <Link to={`/recipes/${recipe.id}`} aria-label={`Open ${recipe.name}`} className="absolute inset-0">
-          <img src={recipe.image?.startsWith("/") ? recipe.image : recipe.id === "molokhia" ? "/images/molokhiya.png" : "/images/chicken-adobo.png"} alt={recipe.name} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+          {image}
         </Link>
         <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold capitalize text-stone-700 backdrop-blur">{recipe.cuisine}</span>
       </div>
       <div className="p-5">
         <Link to={`/recipes/${recipe.id}`} className="text-lg font-semibold text-stone-800 hover:text-amber-700">{recipe.name}</Link>
+        <p className="mt-2 min-h-10 text-sm leading-relaxed text-stone-600">{recipe.discoveryDescription || recipe.preparation}</p>
+        <p className="mt-2 text-xs text-stone-500">Shared by {recipe.contributor || "a community cook"}</p>
         <div className="mt-3 flex items-center justify-between text-sm text-stone-500">
           <span className="inline-flex items-center gap-1.5"><Clock3 className="h-4 w-4" /> {t(language, "homeStyleFavorite")}</span>
           <ArrowRight className="h-4 w-4 text-stone-300 transition group-hover:translate-x-1 group-hover:text-amber-600" />

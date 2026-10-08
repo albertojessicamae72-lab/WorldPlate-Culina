@@ -22,6 +22,7 @@ import { getCurrentUser, resolveOwner } from "@/lib/current-user";
 import { useAuth } from "@/lib/AuthContext";
 import { useSearchAccounts } from "@/lib/accounts-api";
 import IngredientBudgetEditor, { ingredientCostsPayload } from "@/components/IngredientBudgetEditor";
+import CommunityTipsToggle from "@/components/CommunityTipsToggle";
 import { useApp } from "@/lib/AppContext";
 
 const ADAPTATION_TYPES = [
@@ -242,6 +243,7 @@ function AdaptationForm({ recipe, defaultCountry, onDone, user }) {
   const [contributor, setContributor] = useState(user?.displayName || getCurrentUser());
   const [collaborators, setCollaborators] = useState([]);
   const [notes, setNotes] = useState("");
+  const [allowCommunityTips, setAllowCommunityTips] = useState(false);
   const [image, setImage] = useState("");
   const [error, setError] = useState("");
   const createAdaptation = useCreateAdaptation(recipe.id);
@@ -268,6 +270,7 @@ function AdaptationForm({ recipe, defaultCountry, onDone, user }) {
         collaborators: collaborators.map((person) => person.id),
         image,
         notes: notes.trim() || null,
+        allowCommunityTips,
       },
       {
         onSuccess: () => {
@@ -372,6 +375,7 @@ function AdaptationForm({ recipe, defaultCountry, onDone, user }) {
           placeholder="Why these substitutions work locally…"
         />
       </Field>
+      <CommunityTipsToggle checked={allowCommunityTips} onChange={setAllowCommunityTips} />
       <FormError>{error}</FormError>
       <Button type="submit" className="w-full" disabled={createAdaptation.isPending}>
         {createAdaptation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -396,6 +400,7 @@ function RecipeForm({ onDone, user }) {
   const [contributor, setContributor] = useState(user?.displayName || getCurrentUser());
   const [collaborators, setCollaborators] = useState([]);
   const [image, setImage] = useState("");
+  const [allowCommunityTips, setAllowCommunityTips] = useState(false);
   const [error, setError] = useState("");
   const createRecipe = useCreateRecipe();
 
@@ -422,6 +427,7 @@ function RecipeForm({ onDone, user }) {
         owner: user?.id || resolveOwner(contributor),
         collaborators: collaborators.map((person) => person.id),
         image,
+        allowCommunityTips,
       },
       {
         onSuccess: (created) => {
@@ -527,6 +533,7 @@ function RecipeForm({ onDone, user }) {
         </Field>
       </div>
       <CollaboratorField value={collaborators} onChange={setCollaborators} />
+      <CommunityTipsToggle checked={allowCommunityTips} onChange={setAllowCommunityTips} />
       <FormError>{error}</FormError>
       <Button type="submit" className="w-full" disabled={createRecipe.isPending}>
         {createRecipe.isPending && <Loader2 className="h-4 w-4 animate-spin" />}

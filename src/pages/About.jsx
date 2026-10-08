@@ -35,7 +35,6 @@ export default function About() {
       <section className="mt-8 grid gap-4 sm:grid-cols-2">
         {IDEAS.map(({ icon: Icon, title, text }) => <article key={title} className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm"><span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-700"><Icon className="h-5 w-5" /></span><h2 className="mt-4 text-lg font-semibold text-stone-800">{tx(language, title)}</h2><p className="mt-2 text-sm leading-relaxed text-stone-600">{tx(language, text)}</p></article>)}
       </section>
-      <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-5 py-4 text-sm leading-relaxed text-emerald-900">{tx(language, "aboutEveryone")}</p>
     </main>
   );
 }

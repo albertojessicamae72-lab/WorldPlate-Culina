@@ -34,6 +34,8 @@
 
 The Vite development server proxies API requests to the local FastAPI server on port 8000. The backend creates its SQLite database on startup; local database files are excluded from Git.
 
+Community-submitted recipes and local adaptations are saved to that database when submitted and remain available after the contributor signs out or the API restarts.
+
 Community messages are stored in that SQLite database and do not expire when someone logs out or leaves the app idle. Conversations initially load the latest 100 messages; scroll to the top to load older messages. Deleting a conversation hides it from that user's inbox; its messages are permanently deleted only after both participants delete it.
 
 ## Build

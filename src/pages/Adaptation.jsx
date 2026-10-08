@@ -12,12 +12,14 @@ import ContributeDialog from "@/components/ContributeDialog";
 import CommentsSection from "@/components/CommentsSection";
 import InteractionBar from "@/components/InteractionBar";
 import LocalTwistsSection from "@/components/LocalTwistsSection";
+import CommunityTipsToggle from "@/components/CommunityTipsToggle";
 import SaveRecipeButton from "@/components/SaveRecipeButton";
 import MyListCount from "@/components/MyListCount";
 import IngredientBudgetList from "@/components/IngredientBudgetList";
 import { useToast } from "@/components/ui/use-toast";
 import { getViewerId } from "@/lib/current-user";
 import { languageForCountry } from "@/lib/AppContext";
+import { useSetAdaptationCommunityTips } from "@/lib/recipes-api";
 
 export default function Adaptation() {
   const { recipeId, countryCode } = useParams();
@@ -27,6 +29,7 @@ export default function Adaptation() {
   const [contentTab, setContentTab] = useState("recipe");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const deleteAdaptation = useDeleteAdaptation(recipeId);
+  const updateCommunityTips = useSetAdaptationCommunityTips(recipeId, countryCode);
   const { toast } = useToast();
   const destCode = (countryCode || "").toUpperCase();
   const adaptation =
@@ -86,18 +89,19 @@ export default function Adaptation() {
         <span className="rounded-full bg-amber-100 px-2.5 py-1 font-medium text-amber-700">Adapted to {dest?.flag} {dest?.name}</span>
       </div>
 
-      <section className="mt-5 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+      <div className="mt-5 space-y-5">
+      <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
         <div role="tablist" aria-label="Recipe content" className="flex overflow-x-auto border-b border-stone-200 bg-stone-50 p-2">
-          {[['recipe', 'Recipe ingredients'], ['adaptation', 'Adaptation ingredients'], ['tips', 'Tips']].map(([key, label]) => <button key={key} role="tab" aria-selected={contentTab === key} onClick={() => setContentTab(key)} className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${contentTab === key ? "bg-white text-amber-800 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}>{label}</button>)}
+          {[['recipe', 'Recipe ingredients'], ['adaptation', 'Adaptation ingredients']].map(([key, label]) => <button key={key} role="tab" aria-selected={contentTab === key} onClick={() => setContentTab(key)} className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${contentTab === key ? "bg-white text-amber-800 shadow-sm" : "text-stone-500 hover:text-stone-800"}`}>{label}</button>)}
         </div>
         <div className="p-4 sm:p-5">
           {contentTab === "recipe" && <div><h2 className="mb-2 font-semibold text-stone-800">{recipe.name} · {origin?.name}</h2><IngredientBudgetList ingredients={recipe.ingredients} ingredientCosts={recipe.ingredientCosts} budgetAdjustment={recipe.budgetAdjustment} country={origin} /></div>}
           {contentTab === "adaptation" && (adaptation ? <div><h2 className="mb-2 font-semibold text-stone-800">{adaptation.title} · {dest?.name}</h2><IngredientBudgetList ingredients={adaptation.ingredients} ingredientCosts={adaptation.ingredientCosts} budgetAdjustment={adaptation.budgetAdjustment} country={dest} /></div> : <p className="py-6 text-center text-sm text-stone-500">No adaptation ingredients have been added yet.</p>)}
-          {contentTab === "tips" && (adaptation ? <LocalTwistsSection recipeId={recipe.id} countryCode={destCode} embedded /> : <p className="py-6 text-center text-sm text-stone-500">Tips will appear when this adaptation is available.</p>)}
         </div>
       </section>
 
-      <div id="adaptation" className="mt-4 scroll-mt-36 grid items-start gap-4 lg:grid-cols-2">
+      <section id="adaptation" className="mt-4 scroll-mt-36 rounded-2xl border border-amber-200 bg-amber-50/30 p-4 shadow-sm">
+        <div className="grid items-start gap-4 lg:grid-cols-2">
         {/* Original */}
         <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex items-center justify-between">
@@ -175,7 +179,7 @@ export default function Adaptation() {
                 <img
                   src={adaptation.image}
                   alt={adaptation.title}
-                  className="h-52 w-full object-cover"
+                  className="aspect-[4/3] w-full object-cover"
                 />
                 <p className="bg-white/70 px-3 py-1.5 text-xs text-stone-500">
                   Cooked version shared by {adaptation.contributor || "a community member"}
@@ -206,6 +210,26 @@ export default function Adaptation() {
                 <p className="mt-2 text-sm leading-relaxed text-stone-600">{adaptation.notes}</p>
               </div>
             )}
+
+            {isOwner && (
+              <div className="mt-4 border-t border-amber-200/70 pt-4">
+                <CommunityTipsToggle
+                  checked={Boolean(adaptation.allowCommunityTips)}
+                  onChange={(enabled) => updateCommunityTips.mutate(enabled, {
+                    onError: (error) => toast({ title: "Couldn't update community tips", description: error.message, variant: "destructive" }),
+                  })}
+                  disabled={updateCommunityTips.isPending}
+                />
+              </div>
+            )}
+            <div className="mt-4 border-t border-amber-200/70 pt-4">
+              <LocalTwistsSection
+                recipeId={recipe.id}
+                countryCode={destCode}
+                allowCommunityTips={Boolean(adaptation.allowCommunityTips)}
+                scopeLabel={`${adaptation.title} · ${dest?.name}`}
+              />
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-dashed border-stone-300 bg-white p-10 text-center">
@@ -225,7 +249,8 @@ export default function Adaptation() {
             <p className="text-xs text-stone-400">Share how this dish is cooked in {dest?.name}.</p>
           </div>
         )}
-      </div>
+        </div>
+      </section>
 
       {/* Other adaptations */}
       {recipe.adaptations.length > 1 && (
@@ -255,14 +280,13 @@ export default function Adaptation() {
       )}
 
       {adaptation && (
-        <>
-      <div className="mt-6 rounded-2xl border border-amber-100 bg-white px-4">
+        <div className="mt-6 rounded-2xl border border-amber-100 bg-white px-4">
             <p className="pt-3 text-sm font-medium text-stone-700">Like or comment on this local adaptation</p>
             <InteractionBar interactionId={interactionId} commentsHref="#comments" />
-          </div>
-          <CommentsSection recipeId={interactionId} />
-        </>
+        </div>
       )}
+      </div>
+      {adaptation && <CommentsSection recipeId={interactionId} />}
 
       <ContributeDialog
         open={contributeOpen}

@@ -76,6 +76,25 @@ def initialize():
             text TEXT NOT NULL, created_at TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS local_tips_recipe ON local_tips(recipe_id, country_code, created_at);
+        CREATE TABLE IF NOT EXISTS recipe_contributions (
+            recipe_id TEXT PRIMARY KEY,
+            owner_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+            data TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS adaptation_contributions (
+            recipe_id TEXT NOT NULL,
+            country_code TEXT NOT NULL,
+            owner_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+            data TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (recipe_id, country_code)
+        );
+        CREATE TABLE IF NOT EXISTS community_tip_settings (
+            recipe_id TEXT NOT NULL, country_code TEXT NOT NULL DEFAULT '',
+            enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0, 1)),
+            PRIMARY KEY(recipe_id, country_code)
+        );
         CREATE TABLE IF NOT EXISTS local_tip_votes (
             tip_id TEXT NOT NULL REFERENCES local_tips(id) ON DELETE CASCADE,
             account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -133,6 +152,79 @@ def initialize():
         ):
             if column not in columns:
                 connection.execute(f"ALTER TABLE accounts ADD COLUMN {column} {definition}")
+
+
+def save_recipe_contribution(recipe_id: str, owner_id: str, data: dict) -> None:
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _connect() as connection:
+        connection.execute(
+            """INSERT INTO recipe_contributions (recipe_id, owner_id, data, created_at)
+            VALUES (?, ?, ?, ?) ON CONFLICT(recipe_id) DO UPDATE SET
+            owner_id=excluded.owner_id, data=excluded.data""",
+            (recipe_id, owner_id, json.dumps(data, ensure_ascii=False), now),
+        )
+
+
+def list_recipe_contributions() -> list[dict]:
+    with _connect() as connection:
+        rows = connection.execute(
+            "SELECT data FROM recipe_contributions ORDER BY created_at, recipe_id"
+        ).fetchall()
+        return [json.loads(row["data"]) for row in rows]
+
+
+def delete_recipe_contribution(recipe_id: str) -> None:
+    with _connect() as connection:
+        connection.execute(
+            "DELETE FROM adaptation_contributions WHERE recipe_id=?", (recipe_id,)
+        )
+        connection.execute(
+            "DELETE FROM recipe_contributions WHERE recipe_id=?", (recipe_id,)
+        )
+
+
+def save_adaptation_contribution(
+    recipe_id: str, country_code: str, owner_id: str, data: dict
+) -> None:
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with _connect() as connection:
+        connection.execute(
+            """INSERT INTO adaptation_contributions
+            (recipe_id, country_code, owner_id, data, created_at)
+            VALUES (?, ?, ?, ?, ?) ON CONFLICT(recipe_id, country_code)
+            DO UPDATE SET owner_id=excluded.owner_id, data=excluded.data""",
+            (
+                recipe_id,
+                country_code.upper(),
+                owner_id,
+                json.dumps(data, ensure_ascii=False),
+                now,
+            ),
+        )
+
+
+def list_adaptation_contributions() -> list[dict]:
+    with _connect() as connection:
+        rows = connection.execute(
+            """SELECT recipe_id, country_code, data FROM adaptation_contributions
+            ORDER BY created_at, recipe_id, country_code"""
+        ).fetchall()
+        return [
+            {
+                "recipeId": row["recipe_id"],
+                "countryCode": row["country_code"],
+                "data": json.loads(row["data"]),
+            }
+            for row in rows
+        ]
+
+
+def delete_adaptation_contribution(recipe_id: str, country_code: str) -> None:
+    with _connect() as connection:
+        connection.execute(
+            "DELETE FROM adaptation_contributions WHERE recipe_id=? AND country_code=?",
+            (recipe_id, country_code.upper()),
+        )
 
 
 def _account(row):
@@ -522,33 +614,69 @@ def count_meal_plan_users(recipe_id: str, adaptation_country: str | None = None)
         return row["total"]
 
 
-def list_local_tips(recipe_id: str, country_code: str, account_id: str):
+def community_tips_enabled(recipe_id: str, country_code: str = "") -> bool:
     with _connect() as connection:
-        rows = connection.execute("""SELECT t.id, t.recipe_id, t.country_code, t.text, t.created_at,
+        row = connection.execute(
+            "SELECT enabled FROM community_tip_settings WHERE recipe_id=? AND country_code=?",
+            (recipe_id, country_code.upper()),
+        ).fetchone()
+        return bool(row["enabled"]) if row else False
+
+
+def set_community_tips_enabled(recipe_id: str, country_code: str, enabled: bool) -> None:
+    with _connect() as connection:
+        connection.execute(
+            """INSERT INTO community_tip_settings (recipe_id, country_code, enabled)
+            VALUES (?, ?, ?) ON CONFLICT(recipe_id, country_code)
+            DO UPDATE SET enabled=excluded.enabled""",
+            (recipe_id, country_code.upper(), int(enabled)),
+        )
+
+
+def list_local_tips(
+    recipe_id: str,
+    country_code: str,
+    account_id: str,
+    limit: int = 8,
+    offset: int = 0,
+):
+    with _connect() as connection:
+        rows = connection.execute("""SELECT t.id, t.recipe_id, t.country_code, t.account_id, t.text, t.created_at,
             a.username, a.avatar_url, COALESCE(SUM(CASE WHEN v.value = 1 THEN 1 ELSE 0 END), 0) AS upvotes,
             COALESCE(SUM(CASE WHEN v.value = -1 THEN 1 ELSE 0 END), 0) AS downvotes,
             MAX(CASE WHEN v.account_id = ? THEN v.value ELSE 0 END) AS my_vote
             FROM local_tips t JOIN accounts a ON a.id = t.account_id
             LEFT JOIN local_tip_votes v ON v.tip_id = t.id
-            WHERE t.recipe_id = ? AND t.country_code = ? GROUP BY t.id ORDER BY t.created_at DESC""",
-            (account_id, recipe_id, country_code.upper())).fetchall()
-        return [_tip(row) for row in rows]
+            WHERE t.recipe_id = ? AND t.country_code = ?
+            GROUP BY t.id ORDER BY upvotes DESC, t.created_at DESC, t.id DESC
+            LIMIT ? OFFSET ?""",
+            (account_id, recipe_id, country_code.upper(), limit + 1, offset)).fetchall()
+        return {
+            "items": [_tip(row) for row in rows[:limit]],
+            "hasMore": len(rows) > limit,
+        }
 
 
 def list_account_tips(account_id: str):
     with _connect() as connection:
-        rows = connection.execute("""SELECT id, recipe_id, country_code, text, created_at
-            FROM local_tips WHERE account_id=? ORDER BY created_at DESC""", (account_id,)).fetchall()
+        rows = connection.execute("""SELECT t.id, t.recipe_id, t.country_code, t.text, t.created_at,
+            COUNT(v.account_id) AS helpful_votes
+            FROM local_tips t LEFT JOIN local_tip_votes v ON v.tip_id=t.id AND v.value=1
+            WHERE t.account_id=? GROUP BY t.id
+            ORDER BY helpful_votes DESC, t.created_at DESC, t.id DESC""", (account_id,)).fetchall()
         return [{"id": row["id"], "recipeId": row["recipe_id"], "destinationCountry": row["country_code"],
-                 "text": row["text"], "createdAt": row["created_at"]} for row in rows]
+                 "text": row["text"], "helpfulVotes": row["helpful_votes"],
+                 "createdAt": row["created_at"]} for row in rows]
 
 
 def _tip(row):
     up, down, my = row["upvotes"], row["downvotes"], row["my_vote"]
     return {"id": row["id"], "recipeId": row["recipe_id"], "destinationCountry": row["country_code"],
+            "userId": row["account_id"],
             "text": row["text"], "author": "@" + row["username"], "username": row["username"],
             "avatarUrl": row["avatar_url"], "upvotes": up, "downvotes": down,
-            "votes": up - down, "myVote": my, "voted": my != 0, "createdAt": row["created_at"]}
+            "votes": up - down, "myVote": my, "helpfulVotes": up,
+            "voted": my != 0, "createdAt": row["created_at"]}
 
 
 def create_local_tip(recipe_id: str, country_code: str, account_id: str, text: str):
@@ -556,27 +684,69 @@ def create_local_tip(recipe_id: str, country_code: str, account_id: str, text: s
     with _connect() as connection:
         connection.execute("INSERT INTO local_tips VALUES (?, ?, ?, ?, ?, ?)",
                            (tip_id, recipe_id, country_code.upper(), account_id, text.strip(), now))
-        row = connection.execute("""SELECT t.id,t.recipe_id,t.country_code,t.text,t.created_at,a.username,
+        row = connection.execute("""SELECT t.id,t.recipe_id,t.country_code,t.account_id,t.text,t.created_at,a.username,
             a.avatar_url,0 AS upvotes,0 AS downvotes,0 AS my_vote FROM local_tips t JOIN accounts a ON a.id=t.account_id WHERE t.id=?""", (tip_id,)).fetchone()
         return _tip(row)
 
 
-def vote_local_tip(tip_id: str, account_id: str, value: int):
+def update_local_tip(
+    tip_id: str, recipe_id: str, country_code: str, account_id: str, text: str
+):
     with _connect() as connection:
-        exists = connection.execute("SELECT 1 FROM local_tips WHERE id=?", (tip_id,)).fetchone()
+        cursor = connection.execute(
+            """UPDATE local_tips SET text=?
+            WHERE id=? AND recipe_id=? AND country_code=? AND account_id=?""",
+            (text.strip(), tip_id, recipe_id, country_code.upper(), account_id),
+        )
+        if cursor.rowcount != 1:
+            return None
+        return _read_local_tip(connection, tip_id, account_id)
+
+
+def delete_local_tip(
+    tip_id: str, recipe_id: str, country_code: str, account_id: str
+):
+    with _connect() as connection:
+        cursor = connection.execute(
+            """DELETE FROM local_tips
+            WHERE id=? AND recipe_id=? AND country_code=? AND account_id=?""",
+            (tip_id, recipe_id, country_code.upper(), account_id),
+        )
+        return cursor.rowcount == 1
+
+
+def _read_local_tip(connection, tip_id: str, account_id: str):
+    row = connection.execute(
+        """SELECT t.id, t.recipe_id, t.country_code, t.account_id, t.text,
+        t.created_at, a.username, a.avatar_url,
+        COALESCE(SUM(CASE WHEN v.value=1 THEN 1 ELSE 0 END), 0) AS upvotes,
+        COALESCE(SUM(CASE WHEN v.value=-1 THEN 1 ELSE 0 END), 0) AS downvotes,
+        COALESCE(MAX(CASE WHEN v.account_id=? THEN v.value ELSE 0 END), 0) AS my_vote
+        FROM local_tips t JOIN accounts a ON a.id=t.account_id
+        LEFT JOIN local_tip_votes v ON v.tip_id=t.id
+        WHERE t.id=? GROUP BY t.id""",
+        (account_id, tip_id),
+    ).fetchone()
+    return _tip(row) if row else None
+
+
+def vote_local_tip(
+    tip_id: str, account_id: str, value: int,
+    recipe_id: str, country_code: str,
+):
+    with _connect() as connection:
+        exists = connection.execute(
+            """SELECT 1 FROM local_tips
+            WHERE id=? AND recipe_id=? AND country_code=? AND account_id != ?""",
+            (tip_id, recipe_id, country_code.upper(), account_id),
+        ).fetchone()
         if not exists: return None
         current = connection.execute("SELECT value FROM local_tip_votes WHERE tip_id=? AND account_id=?", (tip_id, account_id)).fetchone()
         if current and current["value"] == value:
             connection.execute("DELETE FROM local_tip_votes WHERE tip_id=? AND account_id=?", (tip_id, account_id))
         else:
             connection.execute("INSERT INTO local_tip_votes VALUES (?, ?, ?) ON CONFLICT(tip_id,account_id) DO UPDATE SET value=excluded.value", (tip_id, account_id, value))
-        row = connection.execute("""SELECT t.id,t.recipe_id,t.country_code,t.text,t.created_at,a.username,a.avatar_url,
-            SUM(CASE WHEN v.value=1 THEN 1 ELSE 0 END) AS upvotes,
-            SUM(CASE WHEN v.value=-1 THEN 1 ELSE 0 END) AS downvotes,
-            MAX(CASE WHEN v.account_id=? THEN v.value ELSE 0 END) AS my_vote
-            FROM local_tips t JOIN accounts a ON a.id=t.account_id LEFT JOIN local_tip_votes v ON v.tip_id=t.id
-            WHERE t.id=? GROUP BY t.id""", (account_id, tip_id)).fetchone()
-        return _tip(row)
+        return _read_local_tip(connection, tip_id, account_id)
 
 
 def discard_local_tips(recipe_id: str, country_code: str | None = None):

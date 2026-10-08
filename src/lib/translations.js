@@ -1,7 +1,6 @@
 const messages = {
   en: {
     home: "Home", cuisines: "Cuisines", recipes: "Recipes",
-    tagline: "Free · Community-powered · Made for local kitchens",
     heroTitle: "Discover food from anywhere.",
     heroAccent: "Make it work where you are.",
     heroDescription: "Explore recipes from different cultures and discover how people adapt them to local ingredients, availability, and budgets.",
@@ -19,7 +18,6 @@ const messages = {
   },
   fil: {
     home: "Home", cuisines: "Mga Lutuin", recipes: "Mga Recipe",
-    tagline: "Libre · Sama-samang binuo · Para sa lokal na kusina",
     heroTitle: "Tuklasin ang pagkain mula sa iba't ibang lugar.",
     heroAccent: "Iangkop ito sa kung nasaan ka.",
     heroDescription: "Tuklasin ang mga recipe mula sa iba't ibang kultura at alamin kung paano ito iniangkop sa mga lokal na sangkap, suplay, at badyet.",
@@ -37,7 +35,6 @@ const messages = {
   },
   ja: {
     home: "ホーム", cuisines: "料理", recipes: "レシピ",
-    tagline: "無料 · コミュニティ発 · 地域の台所のために",
     heroTitle: "世界各地の料理を見つけよう。",
     heroAccent: "今いる場所に合わせて。",
     heroDescription: "さまざまな文化のレシピを見て、地元で手に入る食材や予算に合わせた工夫を知りましょう。",
@@ -55,7 +52,6 @@ const messages = {
   },
   ar: {
     home: "الرئيسية", cuisines: "المطابخ", recipes: "الوصفات",
-    tagline: "مجاني · بمشاركة المجتمع · لمطابخ محلية",
     heroTitle: "اكتشف أطعمة من كل مكان.",
     heroAccent: "واجعلها مناسبة لمكانك.",
     heroDescription: "استكشف وصفات من ثقافات مختلفة واكتشف كيف يكيّفها الناس مع المكونات المتاحة محليًا وميزانياتهم.",
@@ -73,7 +69,6 @@ const messages = {
   },
   ko: {
     home: "홈", cuisines: "요리", recipes: "레시피",
-    tagline: "무료 · 커뮤니티 참여 · 우리 지역의 주방을 위해",
     heroTitle: "세계 곳곳의 음식을 만나 보세요.", heroAccent: "지금 있는 곳에 맞게 즐겨요.",
     heroDescription: "다양한 문화의 레시피와 현지 재료, 구할 수 있는 식재료, 예산에 맞게 요리를 바꾸는 방법을 살펴보세요.",
     exploreCuisines: "요리 둘러보기", exploreRecipes: "레시피 둘러보기", adaptRecipe: "레시피 현지화하기", cookingCountry: "어디에서 요리하시나요?",
@@ -85,7 +80,6 @@ const messages = {
   },
   zh: {
     home: "首页", cuisines: "各地菜系", recipes: "食谱",
-    tagline: "免费 · 社区共创 · 为本地厨房而做",
     heroTitle: "探索来自世界各地的美食。", heroAccent: "让它适合你所在的地方。",
     heroDescription: "探索不同文化的食谱，了解人们如何根据当地食材、供应情况和预算调整做法。",
     exploreCuisines: "探索菜系", exploreRecipes: "浏览食谱", adaptRecipe: "本地化食谱", cookingCountry: "你在哪里做饭？",
@@ -97,7 +91,6 @@ const messages = {
   },
   it: {
     home: "Home", cuisines: "Cucine", recipes: "Ricette",
-    tagline: "Gratis · Della comunità · Per le cucine locali",
     heroTitle: "Scopri i piatti di tutto il mondo.", heroAccent: "Adattali a dove ti trovi.",
     heroDescription: "Esplora ricette di culture diverse e scopri come adattarle agli ingredienti locali, alla disponibilità e al budget.",
     exploreCuisines: "Esplora le cucine", exploreRecipes: "Esplora le ricette", adaptRecipe: "Adatta una ricetta", cookingCountry: "Dove cucini?",
@@ -109,7 +102,6 @@ const messages = {
   },
   th: {
     home: "หน้าหลัก", cuisines: "อาหารนานาชาติ", recipes: "สูตรอาหาร",
-    tagline: "ฟรี · ร่วมสร้างโดยชุมชน · เพื่อครัวท้องถิ่น",
     heroTitle: "ค้นพบอาหารจากทั่วทุกมุมโลก", heroAccent: "แล้วปรับให้เข้ากับที่ที่คุณอยู่",
     heroDescription: "สำรวจสูตรอาหารจากหลากหลายวัฒนธรรม พร้อมเรียนรู้การปรับสูตรให้เข้ากับวัตถุดิบที่หาได้และงบประมาณในท้องถิ่น",
     exploreCuisines: "สำรวจอาหาร", exploreRecipes: "ดูสูตรอาหาร", adaptRecipe: "ปรับสูตรอาหาร", cookingCountry: "คุณทำอาหารอยู่ที่ไหน?",
@@ -121,7 +113,6 @@ const messages = {
   },
   hi: {
     home: "होम", cuisines: "व्यंजन", recipes: "रेसिपी",
-    tagline: "मुफ़्त · समुदाय द्वारा · स्थानीय रसोई के लिए",
     heroTitle: "दुनिया भर के खाने खोजें।", heroAccent: "उन्हें अपनी जगह के अनुसार बनाएँ।",
     heroDescription: "अलग-अलग संस्कृतियों की रेसिपी देखें और जानें कि लोग उन्हें स्थानीय सामग्री, उपलब्धता और बजट के अनुसार कैसे ढालते हैं।",
     exploreCuisines: "व्यंजन देखें", exploreRecipes: "रेसिपी देखें", adaptRecipe: "रेसिपी को स्थानीय बनाएँ", cookingCountry: "आप कहाँ खाना बना रहे हैं?",
@@ -133,7 +124,6 @@ const messages = {
   },
   fr: {
     home: "Accueil", cuisines: "Cuisines", recipes: "Recettes",
-    tagline: "Gratuit · Par la communauté · Pour les cuisines locales",
     heroTitle: "Découvrez des plats du monde entier.", heroAccent: "Adaptez-les à votre quotidien.",
     heroDescription: "Explorez des recettes de différentes cultures et découvrez comment les adapter aux ingrédients locaux, à leur disponibilité et à votre budget.",
     exploreCuisines: "Explorer les cuisines", exploreRecipes: "Explorer les recettes", adaptRecipe: "Adapter une recette", cookingCountry: "Où cuisinez-vous ?",
@@ -145,7 +135,6 @@ const messages = {
   },
   "es-MX": {
     home: "Inicio", cuisines: "Cocinas", recipes: "Recetas",
-    tagline: "Gratis · Hecho en comunidad · Para cocinas locales",
     heroTitle: "Descubre comida de todo el mundo.", heroAccent: "Adáptala a donde estás.",
     heroDescription: "Explora recetas de distintas culturas y descubre cómo adaptarlas a los ingredientes locales, lo que encuentras y tu presupuesto.",
     exploreCuisines: "Explorar cocinas", exploreRecipes: "Explorar recetas", adaptRecipe: "Adaptar una receta", cookingCountry: "¿Dónde estás cocinando?",
@@ -157,7 +146,6 @@ const messages = {
   },
   tr: {
     home: "Ana sayfa", cuisines: "Mutfaklar", recipes: "Tarifler",
-    tagline: "Ücretsiz · Topluluk katkılı · Yerel mutfaklar için",
     heroTitle: "Dünyanın dört bir yanından yemekleri keşfedin.", heroAccent: "Bulunduğunuz yere göre uyarlayın.",
     heroDescription: "Farklı kültürlerin tariflerini keşfedin; yerel malzemelere, bulunabilirliğe ve bütçeye göre nasıl uyarlanabileceklerini görün.",
     exploreCuisines: "Mutfakları keşfet", exploreRecipes: "Tarifleri keşfet", adaptRecipe: "Bir tarifi uyarla", cookingCountry: "Nerede yemek yapıyorsunuz?",
@@ -179,7 +167,7 @@ const extraMessages = {
     comments: "Comments", commentsCount: "{count} comments", like: "Like", liked: "Liked", likeThisRecipe: "Like this recipe", removeLike: "Remove like",
     deleteComment: "Delete comment", yourNameOptional: "Your name (optional)", commentPlaceholder: "Share your thoughts about this recipe...", posting: "Posting...", post: "Post",
     loadingComments: "Loading comments...", noCommentsYet: "No comments yet.", beFirstComment: "Be the first to share your thoughts!", commentPosted: "Comment posted", couldntPostComment: "Couldn't post comment", deleteCommentConfirm: "Delete this comment?", couldntDeleteComment: "Couldn't delete comment",
-    footerDescription: "Food travels across borders, but ingredients are local. Discover recipes from around the world and see how communities adapt them to what's available where they live.", contribute: "Contribute", footerTagline: "A free, community-powered project for local kitchens.",
+    footerDescription: "Food travels across borders, but ingredients are local. Discover recipes from around the world and see how communities adapt them to what's available where they live.", contribute: "Contribute", footerTagline: "Community-shared recipes for local kitchens.",
     category_main: "Main Dishes", category_noodles: "Noodles & Pasta", category_rice: "Rice Dishes", category_salads: "Salads & Vegetables", category_soups: "Soups & Stews", category_bread: "Bread & Baked Goods", category_desserts: "Desserts", category_drinks: "Drinks", category_snacks: "Snacks", category_breakfast: "Breakfast", category_sauces: "Sauces & Condiments", category_streetfood: "Street Food",
   },
   fil: {
@@ -191,7 +179,7 @@ const extraMessages = {
     comments: "Mga komento", commentsCount: "{count} komento", like: "I-like", liked: "Naka-like", likeThisRecipe: "I-like ang recipe na ito", removeLike: "Alisin ang like",
     deleteComment: "Burahin ang komento", yourNameOptional: "Pangalan mo (opsyonal)", commentPlaceholder: "Ibahagi ang iyong opinyon tungkol sa recipe na ito...", posting: "Ipinapaskil...", post: "I-post",
     loadingComments: "Kinukuha ang mga komento...", noCommentsYet: "Wala pang komento.", beFirstComment: "Ikaw ang unang magbahagi ng saloobin!", commentPosted: "Naipaskil na ang komento", couldntPostComment: "Hindi maipaskil ang komento", deleteCommentConfirm: "Burahin ang komentong ito?", couldntDeleteComment: "Hindi mabura ang komento",
-    footerDescription: "Tumatawid ng hangganan ang pagkain, pero lokal ang mga sangkap. Tumuklas ng mga recipe mula sa iba't ibang panig ng mundo at alamin kung paano ito iniiaangkop ng mga komunidad sa mga sangkap na mayroon sila.", contribute: "Mag-ambag", footerTagline: "Libre at pinauunlad ng komunidad para sa mga lokal na kusina.",
+    footerDescription: "Tumatawid ng hangganan ang pagkain, pero lokal ang mga sangkap. Tumuklas ng mga recipe mula sa iba't ibang panig ng mundo at alamin kung paano ito iniiaangkop ng mga komunidad sa mga sangkap na mayroon sila.", contribute: "Mag-ambag", footerTagline: "Mga recipe ng komunidad para sa lokal na kusina.",
     category_main: "Pangunahing putahe", category_noodles: "Pansit at pasta", category_rice: "Mga putahe sa kanin", category_salads: "Salad at gulay", category_soups: "Sabaw at nilaga", category_bread: "Tinapay at mga inihurno", category_desserts: "Panghimagas", category_drinks: "Inumin", category_snacks: "Meryenda", category_breakfast: "Almusal", category_sauces: "Sarsa at sawsawan", category_streetfood: "Pagkaing kalye",
   },
   ja: {
@@ -202,7 +190,7 @@ const extraMessages = {
     comments: "コメント", commentsCount: "{count}件のコメント", like: "いいね", liked: "いいね済み", likeThisRecipe: "このレシピにいいね", removeLike: "いいねを取り消す",
     deleteComment: "コメントを削除", yourNameOptional: "お名前（任意）", commentPlaceholder: "このレシピについて感想を共有しましょう…", posting: "投稿中…", post: "投稿",
     loadingComments: "コメントを読み込み中…", noCommentsYet: "コメントはまだありません。", beFirstComment: "最初の感想を共有しましょう！", commentPosted: "コメントを投稿しました", couldntPostComment: "コメントを投稿できませんでした", deleteCommentConfirm: "このコメントを削除しますか？", couldntDeleteComment: "コメントを削除できませんでした",
-    footerDescription: "料理は国境を越えても、食材は地域ごとに異なります。世界のレシピと、各地の人々が手に入る食材に合わせて工夫する方法を見つけましょう。", contribute: "投稿する", footerTagline: "地域の台所のための、無料のコミュニティプロジェクト。",
+    footerDescription: "料理は国境を越えても、食材は地域ごとに異なります。世界のレシピと、各地の人々が手に入る食材に合わせて工夫する方法を見つけましょう。", contribute: "投稿する", footerTagline: "地域の台所に届ける、コミュニティ共有レシピ。",
     category_main: "メイン料理", category_noodles: "麺・パスタ", category_rice: "ご飯もの", category_salads: "サラダ・野菜", category_soups: "スープ・煮込み", category_bread: "パン・焼き菓子", category_desserts: "デザート", category_drinks: "飲み物", category_snacks: "軽食", category_breakfast: "朝食", category_sauces: "ソース・調味料", category_streetfood: "屋台料理",
   },
   ar: {
@@ -213,7 +201,7 @@ const extraMessages = {
     comments: "التعليقات", commentsCount: "{count} تعليق", like: "أعجبني", liked: "أعجبني", likeThisRecipe: "أعجبني هذا الطبق", removeLike: "إزالة الإعجاب",
     deleteComment: "حذف التعليق", yourNameOptional: "اسمك (اختياري)", commentPlaceholder: "شارك رأيك حول هذه الوصفة...", posting: "جارٍ النشر...", post: "نشر",
     loadingComments: "جارٍ تحميل التعليقات...", noCommentsYet: "لا توجد تعليقات بعد.", beFirstComment: "كن أول من يشارك رأيه!", commentPosted: "تم نشر التعليق", couldntPostComment: "تعذر نشر التعليق", deleteCommentConfirm: "هل تريد حذف هذا التعليق؟", couldntDeleteComment: "تعذر حذف التعليق",
-    footerDescription: "تعبر الأطعمة الحدود، لكن المكونات محلية. اكتشف وصفات من العالم وتعرّف على كيفية تكييف المجتمعات لها بحسب ما يتوفر لديها.", contribute: "ساهم", footerTagline: "مشروع مجاني بمشاركة المجتمع للمطابخ المحلية.",
+    footerDescription: "تعبر الأطعمة الحدود، لكن المكونات محلية. اكتشف وصفات من العالم وتعرّف على كيفية تكييف المجتمعات لها بحسب ما يتوفر لديها.", contribute: "ساهم", footerTagline: "وصفات يشاركها المجتمع لمطابخ محلية.",
     category_main: "أطباق رئيسية", category_noodles: "نودلز ومعكرونة", category_rice: "أطباق الأرز", category_salads: "سلطات وخضروات", category_soups: "شوربات ويخنات", category_bread: "خبز ومخبوزات", category_desserts: "حلويات", category_drinks: "مشروبات", category_snacks: "وجبات خفيفة", category_breakfast: "إفطار", category_sauces: "صلصات وتوابل", category_streetfood: "طعام الشارع",
   },
   ko: {
@@ -224,7 +212,7 @@ const extraMessages = {
     comments: "댓글", commentsCount: "댓글 {count}개", like: "좋아요", liked: "좋아요 완료", likeThisRecipe: "이 레시피에 좋아요", removeLike: "좋아요 취소",
     deleteComment: "댓글 삭제", yourNameOptional: "이름 (선택)", commentPlaceholder: "이 레시피에 대한 생각을 나눠 주세요...", posting: "게시 중...", post: "게시",
     loadingComments: "댓글을 불러오는 중...", noCommentsYet: "아직 댓글이 없어요.", beFirstComment: "첫 번째로 의견을 나눠 보세요!", commentPosted: "댓글을 게시했어요", couldntPostComment: "댓글을 게시하지 못했어요", deleteCommentConfirm: "이 댓글을 삭제할까요?", couldntDeleteComment: "댓글을 삭제하지 못했어요",
-    footerDescription: "음식은 국경을 넘어도 재료는 지역마다 다릅니다. 세계의 레시피와 각 지역에서 구할 수 있는 재료에 맞게 조정하는 방법을 만나 보세요.", contribute: "기여하기", footerTagline: "지역 주방을 위한 무료 커뮤니티 프로젝트입니다.",
+    footerDescription: "음식은 국경을 넘어도 재료는 지역마다 다릅니다. 세계의 레시피와 각 지역에서 구할 수 있는 재료에 맞게 조정하는 방법을 만나 보세요.", contribute: "기여하기", footerTagline: "지역 주방을 위한 커뮤니티 공유 레시피.",
     category_main: "주요리", category_noodles: "면과 파스타", category_rice: "밥 요리", category_salads: "샐러드와 채소", category_soups: "국과 스튜", category_bread: "빵과 구움 과자", category_desserts: "디저트", category_drinks: "음료", category_snacks: "간식", category_breakfast: "아침 식사", category_sauces: "소스와 양념", category_streetfood: "길거리 음식",
   },
   zh: {
@@ -235,7 +223,7 @@ const extraMessages = {
     comments: "评论", commentsCount: "{count} 条评论", like: "点赞", liked: "已点赞", likeThisRecipe: "为这个食谱点赞", removeLike: "取消点赞",
     deleteComment: "删除评论", yourNameOptional: "你的名字（选填）", commentPlaceholder: "分享你对这道食谱的想法……", posting: "正在发布……", post: "发布",
     loadingComments: "正在加载评论……", noCommentsYet: "还没有评论。", beFirstComment: "来分享第一条想法吧！", commentPosted: "评论已发布", couldntPostComment: "无法发布评论", deleteCommentConfirm: "要删除这条评论吗？", couldntDeleteComment: "无法删除评论",
-    footerDescription: "美食跨越边界，食材扎根当地。探索世界各地的食谱，看看社区如何用当地能找到的食材调整做法。", contribute: "贡献食谱", footerTagline: "为本地厨房打造的免费社区项目。",
+    footerDescription: "美食跨越边界，食材扎根当地。探索世界各地的食谱，看看社区如何用当地能找到的食材调整做法。", contribute: "贡献食谱", footerTagline: "社区分享的本地厨房食谱。",
     category_main: "主菜", category_noodles: "面食与意面", category_rice: "米饭料理", category_salads: "沙拉与蔬菜", category_soups: "汤与炖菜", category_bread: "面包与烘焙", category_desserts: "甜点", category_drinks: "饮品", category_snacks: "小吃", category_breakfast: "早餐", category_sauces: "酱料与调味品", category_streetfood: "街头小吃",
   },
   it: {
@@ -246,7 +234,7 @@ const extraMessages = {
     comments: "Commenti", commentsCount: "{count} commenti", like: "Mi piace", liked: "Ti piace", likeThisRecipe: "Metti Mi piace a questa ricetta", removeLike: "Rimuovi Mi piace",
     deleteComment: "Elimina commento", yourNameOptional: "Il tuo nome (facoltativo)", commentPlaceholder: "Condividi un pensiero su questa ricetta...", posting: "Pubblicazione...", post: "Pubblica",
     loadingComments: "Caricamento commenti...", noCommentsYet: "Ancora nessun commento.", beFirstComment: "Condividi per primo la tua opinione!", commentPosted: "Commento pubblicato", couldntPostComment: "Impossibile pubblicare il commento", deleteCommentConfirm: "Eliminare questo commento?", couldntDeleteComment: "Impossibile eliminare il commento",
-    footerDescription: "I piatti attraversano i confini, ma gli ingredienti sono locali. Scopri ricette da tutto il mondo e come le comunità le adattano a ciò che trovano sul posto.", contribute: "Contribuisci", footerTagline: "Un progetto gratuito della comunità per le cucine locali.",
+    footerDescription: "I piatti attraversano i confini, ma gli ingredienti sono locali. Scopri ricette da tutto il mondo e come le comunità le adattano a ciò che trovano sul posto.", contribute: "Contribuisci", footerTagline: "Ricette condivise dalla comunità per le cucine locali.",
     category_main: "Piatti principali", category_noodles: "Pasta e noodles", category_rice: "Piatti di riso", category_salads: "Insalate e verdure", category_soups: "Zuppe e stufati", category_bread: "Pane e prodotti da forno", category_desserts: "Dolci", category_drinks: "Bevande", category_snacks: "Snack", category_breakfast: "Colazione", category_sauces: "Salse e condimenti", category_streetfood: "Cibo di strada",
   },
   th: {
@@ -257,7 +245,7 @@ const extraMessages = {
     comments: "ความคิดเห็น", commentsCount: "{count} ความคิดเห็น", like: "ถูกใจ", liked: "ถูกใจแล้ว", likeThisRecipe: "ถูกใจสูตรนี้", removeLike: "ยกเลิกถูกใจ",
     deleteComment: "ลบความคิดเห็น", yourNameOptional: "ชื่อของคุณ (ไม่บังคับ)", commentPlaceholder: "แบ่งปันความคิดเห็นเกี่ยวกับสูตรนี้...", posting: "กำลังโพสต์...", post: "โพสต์",
     loadingComments: "กำลังโหลดความคิดเห็น...", noCommentsYet: "ยังไม่มีความคิดเห็น", beFirstComment: "มาแบ่งปันความคิดเห็นเป็นคนแรก!", commentPosted: "โพสต์ความคิดเห็นแล้ว", couldntPostComment: "โพสต์ความคิดเห็นไม่สำเร็จ", deleteCommentConfirm: "ลบความคิดเห็นนี้ไหม?", couldntDeleteComment: "ลบความคิดเห็นไม่สำเร็จ",
-    footerDescription: "อาหารเดินทางข้ามพรมแดน แต่วัตถุดิบเป็นของท้องถิ่น ค้นพบสูตรจากทั่วโลกและวิธีที่ชุมชนปรับให้เข้ากับวัตถุดิบที่หาได้", contribute: "ร่วมแบ่งปัน", footerTagline: "โปรเจกต์ฟรีที่ขับเคลื่อนโดยชุมชนเพื่อครัวท้องถิ่น",
+    footerDescription: "อาหารเดินทางข้ามพรมแดน แต่วัตถุดิบเป็นของท้องถิ่น ค้นพบสูตรจากทั่วโลกและวิธีที่ชุมชนปรับให้เข้ากับวัตถุดิบที่หาได้", contribute: "ร่วมแบ่งปัน", footerTagline: "สูตรอาหารที่ชุมชนแบ่งปันสำหรับครัวท้องถิ่น",
     category_main: "อาหารจานหลัก", category_noodles: "ก๋วยเตี๋ยวและพาสต้า", category_rice: "เมนูข้าว", category_salads: "สลัดและผัก", category_soups: "ซุปและสตูว์", category_bread: "ขนมปังและเบเกอรี่", category_desserts: "ของหวาน", category_drinks: "เครื่องดื่ม", category_snacks: "ของว่าง", category_breakfast: "อาหารเช้า", category_sauces: "ซอสและเครื่องปรุง", category_streetfood: "สตรีตฟู้ด",
   },
   hi: {
@@ -268,7 +256,7 @@ const extraMessages = {
     comments: "टिप्पणियाँ", commentsCount: "{count} टिप्पणियाँ", like: "पसंद", liked: "पसंद किया", likeThisRecipe: "इस रेसिपी को पसंद करें", removeLike: "पसंद हटाएँ",
     deleteComment: "टिप्पणी हटाएँ", yourNameOptional: "आपका नाम (वैकल्पिक)", commentPlaceholder: "इस रेसिपी के बारे में अपने विचार साझा करें...", posting: "पोस्ट हो रहा है...", post: "पोस्ट करें",
     loadingComments: "टिप्पणियाँ लोड हो रही हैं...", noCommentsYet: "अभी कोई टिप्पणी नहीं।", beFirstComment: "अपना विचार साझा करने वाले पहले व्यक्ति बनें!", commentPosted: "टिप्पणी पोस्ट हो गई", couldntPostComment: "टिप्पणी पोस्ट नहीं हो सकी", deleteCommentConfirm: "यह टिप्पणी हटाएँ?", couldntDeleteComment: "टिप्पणी हटाई नहीं जा सकी",
-    footerDescription: "खाना सीमाएँ पार करता है, लेकिन सामग्री स्थानीय होती है। दुनिया भर की रेसिपी खोजें और जानें कि समुदाय उपलब्ध सामग्री के अनुसार उन्हें कैसे ढालते हैं।", contribute: "योगदान दें", footerTagline: "स्थानीय रसोई के लिए समुदाय द्वारा चलाया गया मुफ़्त प्रोजेक्ट।",
+    footerDescription: "खाना सीमाएँ पार करता है, लेकिन सामग्री स्थानीय होती है। दुनिया भर की रेसिपी खोजें और जानें कि समुदाय उपलब्ध सामग्री के अनुसार उन्हें कैसे ढालते हैं।", contribute: "योगदान दें", footerTagline: "स्थानीय रसोई के लिए समुदाय द्वारा साझा की गई रेसिपी।",
     category_main: "मुख्य व्यंजन", category_noodles: "नूडल्स और पास्ता", category_rice: "चावल के व्यंजन", category_salads: "सलाद और सब्ज़ियाँ", category_soups: "सूप और स्टू", category_bread: "ब्रेड और बेक्ड चीज़ें", category_desserts: "मिठाइयाँ", category_drinks: "पेय", category_snacks: "नाश्ता", category_breakfast: "सुबह का नाश्ता", category_sauces: "सॉस और मसाले", category_streetfood: "स्ट्रीट फूड",
   },
   fr: {
@@ -279,7 +267,7 @@ const extraMessages = {
     comments: "Commentaires", commentsCount: "{count} commentaires", like: "J’aime", liked: "Aimé", likeThisRecipe: "Aimer cette recette", removeLike: "Retirer le J’aime",
     deleteComment: "Supprimer le commentaire", yourNameOptional: "Votre nom (facultatif)", commentPlaceholder: "Partagez votre avis sur cette recette...", posting: "Publication...", post: "Publier",
     loadingComments: "Chargement des commentaires...", noCommentsYet: "Pas encore de commentaires.", beFirstComment: "Soyez la première personne à partager votre avis !", commentPosted: "Commentaire publié", couldntPostComment: "Impossible de publier le commentaire", deleteCommentConfirm: "Supprimer ce commentaire ?", couldntDeleteComment: "Impossible de supprimer le commentaire",
-    footerDescription: "Les plats voyagent, mais les ingrédients restent locaux. Découvrez des recettes du monde entier et la façon dont les communautés les adaptent à ce qu’elles trouvent sur place.", contribute: "Contribuer", footerTagline: "Un projet gratuit et communautaire pour les cuisines locales.",
+    footerDescription: "Les plats voyagent, mais les ingrédients restent locaux. Découvrez des recettes du monde entier et la façon dont les communautés les adaptent à ce qu’elles trouvent sur place.", contribute: "Contribuer", footerTagline: "Des recettes partagées par la communauté pour les cuisines locales.",
     category_main: "Plats principaux", category_noodles: "Nouilles et pâtes", category_rice: "Plats de riz", category_salads: "Salades et légumes", category_soups: "Soupes et ragoûts", category_bread: "Pains et pâtisseries", category_desserts: "Desserts", category_drinks: "Boissons", category_snacks: "En-cas", category_breakfast: "Petit-déjeuner", category_sauces: "Sauces et condiments", category_streetfood: "Cuisine de rue",
   },
   "es-MX": {
@@ -290,7 +278,7 @@ const extraMessages = {
     comments: "Comentarios", commentsCount: "{count} comentarios", like: "Me gusta", liked: "Te gusta", likeThisRecipe: "Me gusta esta receta", removeLike: "Quitar Me gusta",
     deleteComment: "Eliminar comentario", yourNameOptional: "Tu nombre (opcional)", commentPlaceholder: "Comparte lo que piensas de esta receta...", posting: "Publicando...", post: "Publicar",
     loadingComments: "Cargando comentarios...", noCommentsYet: "Aún no hay comentarios.", beFirstComment: "¡Comparte tu opinión primero!", commentPosted: "Comentario publicado", couldntPostComment: "No se pudo publicar el comentario", deleteCommentConfirm: "¿Eliminar este comentario?", couldntDeleteComment: "No se pudo eliminar el comentario",
-    footerDescription: "La comida cruza fronteras, pero los ingredientes son locales. Descubre recetas de todo el mundo y cómo las comunidades las adaptan a lo que encuentran en su región.", contribute: "Contribuir", footerTagline: "Un proyecto gratuito de la comunidad para cocinas locales.",
+    footerDescription: "La comida cruza fronteras, pero los ingredientes son locales. Descubre recetas de todo el mundo y cómo las comunidades las adaptan a lo que encuentran en su región.", contribute: "Contribuir", footerTagline: "Recetas compartidas por la comunidad para cocinas locales.",
     category_main: "Platos fuertes", category_noodles: "Fideos y pasta", category_rice: "Platillos de arroz", category_salads: "Ensaladas y verduras", category_soups: "Sopas y guisos", category_bread: "Pan y repostería", category_desserts: "Postres", category_drinks: "Bebidas", category_snacks: "Botanas", category_breakfast: "Desayuno", category_sauces: "Salsas y condimentos", category_streetfood: "Comida callejera",
   },
   tr: {
@@ -301,69 +289,69 @@ const extraMessages = {
     comments: "Yorumlar", commentsCount: "{count} yorum", like: "Beğen", liked: "Beğendin", likeThisRecipe: "Bu tarifi beğen", removeLike: "Beğeniyi kaldır",
     deleteComment: "Yorumu sil", yourNameOptional: "Adınız (isteğe bağlı)", commentPlaceholder: "Bu tarif hakkındaki düşüncelerinizi paylaşın...", posting: "Paylaşılıyor...", post: "Paylaş",
     loadingComments: "Yorumlar yükleniyor...", noCommentsYet: "Henüz yorum yok.", beFirstComment: "İlk düşüncenizi siz paylaşın!", commentPosted: "Yorum paylaşıldı", couldntPostComment: "Yorum paylaşılamadı", deleteCommentConfirm: "Bu yorum silinsin mi?", couldntDeleteComment: "Yorum silinemedi",
-    footerDescription: "Yemekler sınırları aşar, malzemeler yereldir. Dünyanın dört bir yanından tarifleri ve toplulukların bunları yerelde bulabildikleri malzemelere göre nasıl uyarladığını keşfedin.", contribute: "Katkıda bulun", footerTagline: "Yerel mutfaklar için ücretsiz, topluluk destekli bir proje.",
+    footerDescription: "Yemekler sınırları aşar, malzemeler yereldir. Dünyanın dört bir yanından tarifleri ve toplulukların bunları yerelde bulabildikleri malzemelere göre nasıl uyarladığını keşfedin.", contribute: "Katkıda bulun", footerTagline: "Yerel mutfaklar için topluluk tarafından paylaşılan tarifler.",
     category_main: "Ana yemekler", category_noodles: "Erişte ve makarna", category_rice: "Pirinç yemekleri", category_salads: "Salata ve sebzeler", category_soups: "Çorbalar ve güveçler", category_bread: "Ekmek ve fırın ürünleri", category_desserts: "Tatlılar", category_drinks: "İçecekler", category_snacks: "Atıştırmalıklar", category_breakfast: "Kahvaltı", category_sauces: "Soslar ve çeşniler", category_streetfood: "Sokak lezzetleri",
   },
 };
 
 const featureMessages = {
   en: {
-    restaurantMap: "Restaurant map", restaurantLockedTitle: "Opening when bookings are ready",
+    restaurantMap: "Culinav", restaurantLockedTitle: "Opening when bookings are ready",
     restaurantLockedDescription: "The restaurant map is temporarily locked while we prepare local listings and booking options. Check back when the community is ready to welcome you.",
     backHome: "Back to home", messages: "Messages",
   },
   fil: {
-    restaurantMap: "Mapa ng restaurant", restaurantLockedTitle: "Magbubukas kapag handa na ang booking",
+    restaurantMap: "Culinav", restaurantLockedTitle: "Magbubukas kapag handa na ang booking",
     restaurantLockedDescription: "Pansamantalang naka-lock ang mapa habang inihahanda namin ang mga lokal na listahan at booking. Bumalik kapag handa nang tumanggap ang komunidad.",
     backHome: "Bumalik sa Home", messages: "Mga mensahe",
   },
   ja: {
-    restaurantMap: "レストランマップ", restaurantLockedTitle: "予約の準備ができ次第オープンします",
+    restaurantMap: "Culinav", restaurantLockedTitle: "予約の準備ができ次第オープンします",
     restaurantLockedDescription: "地域のお店情報と予約機能を準備中のため、レストランマップは一時的に利用できません。コミュニティの準備が整ったら、またご確認ください。",
     backHome: "ホームに戻る", messages: "メッセージ",
   },
   ko: {
-    restaurantMap: "레스토랑 지도", restaurantLockedTitle: "예약 준비가 완료되면 열립니다",
+    restaurantMap: "Culinav", restaurantLockedTitle: "예약 준비가 완료되면 열립니다",
     restaurantLockedDescription: "지역 식당 목록과 예약 기능을 준비하는 동안 레스토랑 지도가 잠시 잠겨 있습니다. 커뮤니티가 준비되면 다시 확인해 주세요.",
     backHome: "홈으로", messages: "메시지",
   },
   zh: {
-    restaurantMap: "餐厅地图", restaurantLockedTitle: "预约功能准备就绪后开放",
+    restaurantMap: "Culinav", restaurantLockedTitle: "预约功能准备就绪后开放",
     restaurantLockedDescription: "我们正在准备本地餐厅信息和预约选项，餐厅地图暂时锁定。社区准备好后请再来查看。",
     backHome: "返回首页", messages: "消息",
   },
   it: {
-    restaurantMap: "Mappa dei ristoranti", restaurantLockedTitle: "Aprirà quando le prenotazioni saranno pronte",
+    restaurantMap: "Culinav", restaurantLockedTitle: "Aprirà quando le prenotazioni saranno pronte",
     restaurantLockedDescription: "La mappa è temporaneamente bloccata mentre prepariamo gli elenchi locali e le opzioni di prenotazione. Torna a trovarci quando la community sarà pronta.",
     backHome: "Torna alla home", messages: "Messaggi",
   },
   ar: {
-    restaurantMap: "خريطة المطاعم", restaurantLockedTitle: "ستُفتح عند جاهزية الحجوزات",
+    restaurantMap: "Culinav", restaurantLockedTitle: "ستُفتح عند جاهزية الحجوزات",
     restaurantLockedDescription: "الخريطة مقفلة مؤقتًا ريثما نجهز قوائم المطاعم المحلية وخيارات الحجز. تفقّدها مجددًا عندما يصبح المجتمع جاهزًا.",
     backHome: "العودة إلى الرئيسية", messages: "الرسائل",
   },
   th: {
-    restaurantMap: "แผนที่ร้านอาหาร", restaurantLockedTitle: "จะเปิดให้บริการเมื่อระบบจองพร้อม",
+    restaurantMap: "Culinav", restaurantLockedTitle: "จะเปิดให้บริการเมื่อระบบจองพร้อม",
     restaurantLockedDescription: "แผนที่ร้านอาหารถูกล็อกชั่วคราวระหว่างเตรียมรายชื่อร้านในพื้นที่และตัวเลือกการจอง กลับมาตรวจสอบอีกครั้งเมื่อชุมชนพร้อม",
     backHome: "กลับหน้าแรก", messages: "ข้อความ",
   },
   hi: {
-    restaurantMap: "रेस्तरां का नक्शा", restaurantLockedTitle: "बुकिंग तैयार होने पर खुलेगा",
+    restaurantMap: "Culinav", restaurantLockedTitle: "बुकिंग तैयार होने पर खुलेगा",
     restaurantLockedDescription: "स्थानीय रेस्तरां सूची और बुकिंग विकल्प तैयार होने तक नक्शा अस्थायी रूप से बंद है। समुदाय तैयार होने पर फिर से देखें।",
     backHome: "होम पर वापस जाएँ", messages: "संदेश",
   },
   fr: {
-    restaurantMap: "Carte des restaurants", restaurantLockedTitle: "Ouverture dès que les réservations seront prêtes",
+    restaurantMap: "Culinav", restaurantLockedTitle: "Ouverture dès que les réservations seront prêtes",
     restaurantLockedDescription: "La carte est temporairement verrouillée pendant la préparation des restaurants locaux et des options de réservation. Revenez lorsque la communauté sera prête.",
     backHome: "Retour à l’accueil", messages: "Messages",
   },
   "es-MX": {
-    restaurantMap: "Mapa de restaurantes", restaurantLockedTitle: "Abrirá cuando estén listas las reservaciones",
+    restaurantMap: "Culinav", restaurantLockedTitle: "Abrirá cuando estén listas las reservaciones",
     restaurantLockedDescription: "El mapa está bloqueado temporalmente mientras preparamos los restaurantes locales y las opciones de reservación. Vuelve cuando la comunidad esté lista.",
     backHome: "Volver al inicio", messages: "Mensajes",
   },
   tr: {
-    restaurantMap: "Restoran haritası", restaurantLockedTitle: "Rezervasyonlar hazır olduğunda açılacak",
+    restaurantMap: "Culinav", restaurantLockedTitle: "Rezervasyonlar hazır olduğunda açılacak",
     restaurantLockedDescription: "Yerel restoran listelerini ve rezervasyon seçeneklerini hazırlarken harita geçici olarak kilitlidir. Topluluk hazır olduğunda tekrar kontrol edin.",
     backHome: "Ana sayfaya dön", messages: "Mesajlar",
   },

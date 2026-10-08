@@ -43,6 +43,7 @@ class Adaptation(BaseModel):
     image: str = ""
     notes: str | None = None
     status: str = "published"
+    allowCommunityTips: bool = False
 
 
 class Recipe(BaseModel):
@@ -57,6 +58,7 @@ class Recipe(BaseModel):
     owner: str | None = None
     collaborators: list[ContributorProfile] = Field(default_factory=list)
     image: str = ""
+    discoveryDescription: str | None = None
     ingredients: list[str] = []
     ingredientCosts: list[IngredientCost] = Field(default_factory=list)
     budgetAdjustment: float = Field(default=0, ge=0)
@@ -66,6 +68,7 @@ class Recipe(BaseModel):
     status: str = "published"
     translations: list[Translation] = []
     adaptations: list[Adaptation] = []
+    allowCommunityTips: bool = False
 
 
 class NewAdaptation(BaseModel):
@@ -83,6 +86,11 @@ class NewAdaptation(BaseModel):
     collaborators: list[str] = Field(default_factory=list, max_length=20)
     image: str = ""
     notes: str | None = None
+    allowCommunityTips: bool = False
+
+
+class CommunityTipsSetting(BaseModel):
+    allowCommunityTips: bool
 
 
 class Comment(BaseModel):
@@ -114,14 +122,23 @@ class LocalTwist(BaseModel):
     id: str
     recipeId: str
     destinationCountry: str
+    userId: str | None = None
     text: str
     author: str
+    username: str | None = None
+    avatarUrl: str = ""
     votes: int = 0
     voted: bool = False
     upvotes: int = 0
     downvotes: int = 0
     myVote: int = 0
+    helpfulVotes: int = 0
     createdAt: str = Field(default_factory=_utcnow)
+
+
+class LocalTwistsPage(BaseModel):
+    items: list[LocalTwist]
+    hasMore: bool
 
 
 class NewLocalTwist(BaseModel):
@@ -139,13 +156,13 @@ class NewLocalTwist(BaseModel):
 
 
 class LocalTwistVote(BaseModel):
-    value: int = Field(ge=-1, le=1)
+    value: int = Field(ge=1, le=1)
 
     @field_validator("value")
     @classmethod
     def require_vote_direction(cls, value: int) -> int:
-        if value not in (-1, 1):
-            raise ValueError("Vote must be up or down")
+        if value != 1:
+            raise ValueError("Vote must be helpful")
         return value
 
 
@@ -166,3 +183,4 @@ class NewRecipe(BaseModel):
     preparation: str = ""
     servingSize: int | None = None
     estimatedCost: float | None = None
+    allowCommunityTips: bool = False

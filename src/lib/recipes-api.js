@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RECIPES, getRecipe } from "@/data/recipes";
 import { getSessionToken } from "@/lib/accounts-api";
 
@@ -88,6 +88,36 @@ export function useCreateAdaptation(recipeId) {
       queryClient.invalidateQueries({ queryKey: ["recipes"] });
     },
   });
+}
+
+function useSetCommunityTips(path, recipeId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (allowCommunityTips) =>
+      request(path, {
+        method: "PATCH",
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ allowCommunityTips }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["recipes"] });
+      queryClient.invalidateQueries({ queryKey: ["recipes", recipeId] });
+    },
+  });
+}
+
+export function useSetRecipeCommunityTips(recipeId) {
+  return useSetCommunityTips(
+    `/api/recipes/${encodeURIComponent(recipeId)}/community-tips`,
+    recipeId,
+  );
+}
+
+export function useSetAdaptationCommunityTips(recipeId, countryCode) {
+  return useSetCommunityTips(
+    `/api/recipes/${encodeURIComponent(recipeId)}/adaptations/${encodeURIComponent(countryCode)}/community-tips`,
+    recipeId,
+  );
 }
 
 export function useDeleteRecipe() {
@@ -205,16 +235,22 @@ export function useLocalTwists(recipeId, countryCode, accountId) {
   const tipsPath = countryCode
     ? `/adaptations/${encodeURIComponent(countryCode)}/twists`
     : "/tips";
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["localTwists", recipeId, countryCode, accountId],
-    queryFn: async () => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
       try {
-        return await request(`/api/recipes/${encodeURIComponent(recipeId)}${tipsPath}`);
+        const params = new URLSearchParams({ offset: String(pageParam), limit: "8" });
+        return await request(`/api/recipes/${encodeURIComponent(recipeId)}${tipsPath}?${params}`);
       } catch (error) {
-        if (usePublicFallback(error)) return [];
+        if (usePublicFallback(error)) return { items: [], hasMore: false };
         throw error;
       }
     },
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.hasMore
+        ? pages.reduce((total, page) => total + page.items.length, 0)
+        : undefined,
     enabled: Boolean(recipeId && accountId),
   });
 }
@@ -241,6 +277,46 @@ export function useCreateLocalTwist(recipeId, countryCode, accountId) {
   });
 }
 
+export function useUpdateLocalTwist(recipeId, countryCode, accountId) {
+  const queryClient = useQueryClient();
+  const tipPath = countryCode
+    ? `/adaptations/${encodeURIComponent(countryCode)}/twists`
+    : "/tips";
+  return useMutation({
+    mutationFn: ({ twistId, text }) =>
+      request(
+        `/api/recipes/${encodeURIComponent(recipeId)}${tipPath}/${encodeURIComponent(twistId)}`,
+        {
+          method: "PATCH",
+          headers: JSON_HEADERS,
+          body: JSON.stringify({ text }),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["localTwists", recipeId, countryCode] });
+      queryClient.invalidateQueries({ queryKey: ["accountTips"] });
+    },
+  });
+}
+
+export function useDeleteLocalTwist(recipeId, countryCode, accountId) {
+  const queryClient = useQueryClient();
+  const tipPath = countryCode
+    ? `/adaptations/${encodeURIComponent(countryCode)}/twists`
+    : "/tips";
+  return useMutation({
+    mutationFn: (twistId) =>
+      request(
+        `/api/recipes/${encodeURIComponent(recipeId)}${tipPath}/${encodeURIComponent(twistId)}`,
+        { method: "DELETE" },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["localTwists", recipeId, countryCode] });
+      queryClient.invalidateQueries({ queryKey: ["accountTips"] });
+    },
+  });
+}
+
 export function useVoteLocalTwist(recipeId, countryCode, accountId) {
   const queryClient = useQueryClient();
   const tipsPath = countryCode
@@ -258,6 +334,7 @@ export function useVoteLocalTwist(recipeId, countryCode, accountId) {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["localTwists", recipeId, countryCode] });
+      queryClient.invalidateQueries({ queryKey: ["accountTips"] });
     },
   });
 }

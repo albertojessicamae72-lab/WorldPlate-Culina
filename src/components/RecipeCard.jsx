@@ -21,7 +21,7 @@ export default function RecipeCard({ recipe }) {
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md">
-      <Link to={`/recipes/${recipe.id}`} aria-label={`${tr("viewAction")} ${recipe.name}`} className="relative block h-40 overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
+      <Link to={`/recipes/${recipe.id}`} aria-label={`${tr("viewAction")} ${recipe.name}`} className="relative block h-48 overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
         {recipe.image && recipe.image.startsWith("/") ? (
           <img
             src={recipe.image}
