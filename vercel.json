@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://culina-backend.onrender.com/api/:path*"
+      "destination": "https://worldplate-culina.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
