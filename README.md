@@ -42,4 +42,4 @@ Community messages are stored in that SQLite database and do not expire when som
 npm run build
 ```
 
-No hosting or deployment provider is configured in this repository. Push commits to GitHub as usual, and configure deployment separately with the host you choose.
+The frontend is deployed on Vercel and the FastAPI backend is deployed on Render. `vercel.json` forwards `/api/*` requests to the Render backend and sends other paths to `index.html` for client-side routing.
