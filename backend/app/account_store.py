@@ -14,8 +14,79 @@ DATABASE_PATH = Path(__file__).resolve().parent.parent / "data" / "culina.sqlite
 PASSWORD_ITERATIONS = 310_000
 
 
+class _PostgresConnection:
+    is_postgres = True
+
+    def __init__(self, connection):
+        self._connection = connection
+
+    @staticmethod
+    def _prepare(statement: str) -> str:
+        statement = re.sub(
+            r"(\b[A-Za-z_][A-Za-z_0-9]*)\s*=\s*\?\s+COLLATE NOCASE",
+            r"LOWER(\1) = LOWER(?)",
+            statement,
+            flags=re.IGNORECASE,
+        )
+        statement = re.sub(
+            r"(\b[A-Za-z_][A-Za-z_0-9]*)\s+LIKE\s+\?\s+COLLATE NOCASE",
+            r"\1 ILIKE ?",
+            statement,
+            flags=re.IGNORECASE,
+        )
+        statement = re.sub(
+            r"\b([A-Za-z_][A-Za-z_0-9]*)\s+COLLATE NOCASE",
+            r"LOWER(\1)",
+            statement,
+            flags=re.IGNORECASE,
+        )
+        if re.match(r"\s*INSERT\s+OR\s+IGNORE\s+INTO\b", statement, re.IGNORECASE):
+            statement = re.sub(
+                r"INSERT\s+OR\s+IGNORE\s+INTO",
+                "INSERT INTO",
+                statement,
+                count=1,
+                flags=re.IGNORECASE,
+            ).rstrip().rstrip(";") + " ON CONFLICT DO NOTHING"
+        return statement.replace("?", "%s")
+
+    def execute(self, statement: str, parameters=()):
+        return self._connection.execute(self._prepare(statement), parameters)
+
+    def executemany(self, statement: str, parameters):
+        return self._connection.executemany(self._prepare(statement), parameters)
+
+    def executescript(self, script: str):
+        cursor = None
+        for statement in script.split(";"):
+            if statement.strip():
+                cursor = self.execute(statement)
+        return cursor
+
+
 @contextmanager
 def _connect():
+    database_url = os.environ.get("DATABASE_URL", "").strip()
+    if database_url:
+        try:
+            import psycopg
+            from psycopg.rows import dict_row
+        except ImportError as error:
+            raise RuntimeError(
+                "DATABASE_URL is set but the PostgreSQL driver is missing. "
+                "Install backend/requirements.txt."
+            ) from error
+
+        if database_url.startswith("postgres://"):
+            database_url = "postgresql://" + database_url[len("postgres://"):]
+        connection = psycopg.connect(database_url, row_factory=dict_row)
+        try:
+            with connection:
+                yield _PostgresConnection(connection)
+        finally:
+            connection.close()
+        return
+
     DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(DATABASE_PATH, timeout=10)
     connection.row_factory = sqlite3.Row
@@ -31,7 +102,7 @@ def initialize():
     with _connect() as connection:
         connection.executescript("""
         CREATE TABLE IF NOT EXISTS accounts (
-            id TEXT PRIMARY KEY, username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE,
             display_name TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'budget_cook',
             about TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL,
             password_salt TEXT NOT NULL DEFAULT '', password_hash TEXT NOT NULL DEFAULT '',
@@ -136,7 +207,15 @@ def initialize():
             locked_until TEXT NOT NULL DEFAULT ''
         );
         """)
-        columns = {row["name"] for row in connection.execute("PRAGMA table_info(accounts)")}
+        if getattr(connection, "is_postgres", False):
+            columns = {
+                row["name"] for row in connection.execute(
+                    "SELECT column_name AS name FROM information_schema.columns "
+                    "WHERE table_schema = current_schema() AND table_name = 'accounts'"
+                )
+            }
+        else:
+            columns = {row["name"] for row in connection.execute("PRAGMA table_info(accounts)")}
         if "password_salt" not in columns:
             connection.execute("ALTER TABLE accounts ADD COLUMN password_salt TEXT NOT NULL DEFAULT ''")
         if "password_hash" not in columns:
@@ -152,6 +231,10 @@ def initialize():
         ):
             if column not in columns:
                 connection.execute(f"ALTER TABLE accounts ADD COLUMN {column} {definition}")
+        connection.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS accounts_username_case_insensitive "
+            "ON accounts (LOWER(username))"
+        )
 
 
 def save_recipe_contribution(recipe_id: str, owner_id: str, data: dict) -> None:
