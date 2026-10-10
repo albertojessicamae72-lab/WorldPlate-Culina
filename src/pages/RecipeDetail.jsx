@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowDownUp, ArrowLeft, ChefHat, Coins, Globe2, Tag, Trash2, Users } from "lucide-react";
+import { ArrowDownUp, ArrowLeft, ChefHat, Coins, Globe2, Share2, Tag, Trash2, Users } from "lucide-react";
 import { useDeleteRecipe, useRecipe } from "@/lib/recipes-api";
 import { getCountry } from "@/data/countries";
 import { getCuisine } from "@/data/cuisines";
@@ -75,6 +75,34 @@ export default function RecipeDetail() {
     );
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: recipe.name,
+      text: `Check out this recipe: ${recipe.name}`,
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      toast({ title: "Recipe link copied", description: "Paste it into a message or another app to share." });
+    } catch {
+      toast({
+        title: "Couldn't share recipe",
+        description: "Your browser couldn't open sharing or copy the link. Copy the URL from the address bar instead.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
       <div className="flex items-center justify-between gap-3">
@@ -144,6 +172,13 @@ export default function RecipeDetail() {
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <LikeButton recipeId={recipe.id} />
             <SaveRecipeButton recipeId={recipe.id} title={recipe.name} />
+            <button
+              type="button"
+              onClick={handleShare}
+              className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-4 py-2 text-sm font-medium text-stone-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800"
+            >
+              <Share2 className="h-4 w-4" /> Share recipe
+            </button>
             <MyListCount recipeId={recipe.id} />
           </div>
         </div>
