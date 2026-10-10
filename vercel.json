@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/api/:path*",
+      "source": "/api/ :path*",
       "destination": "https://worldplate-culina.onrender.com/api/:path*"
     },
     {
